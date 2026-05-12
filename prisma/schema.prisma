@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProductCategory {
+  pokemon_tcg
+  merch
+}
+
+enum ProductStatus {
+  active
+  draft
+  sold_out
+  hidden
+}
+
+model Product {
+  id            String          @id @default(cuid())
+  slug          String          @unique
+  name          String
+  description   String
+  category      ProductCategory
+  productType   String
+  priceCents    Int
+  stockQuantity Int
+  status        ProductStatus   @default(draft)
+  images        String[]
+  featured      Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([category, status])
+  @@index([featured, status])
+}
