@@ -12,10 +12,10 @@ enum ProductCategory {
 }
 
 enum ProductStatus {
-  active
-  draft
-  sold_out
-  hidden
+    active
+    draft
+    sold_out
+    hidden
 }
 
 model Product {
