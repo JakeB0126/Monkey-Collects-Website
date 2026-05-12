@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { AddToCartButton } from "@/components/add-to-cart-button";
 import { formatPrice, getActiveProductBySlug, getActiveProducts } from "@/lib/products";
 
 type ProductDetailPageProps = {
@@ -42,13 +43,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               Status: {product.status}
             </span>
           </div>
-          <button
-            type="button"
-            disabled
-            className="mt-8 w-full rounded-md bg-neutral-300 px-5 py-3 text-sm font-bold text-neutral-600 sm:w-auto"
-          >
-            Add to cart coming soon
-          </button>
+          <AddToCartButton productSlug={product.slug} />
         </section>
       </div>
     </div>
