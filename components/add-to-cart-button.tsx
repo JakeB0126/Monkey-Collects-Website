@@ -1,18 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { addCartItem, getCartProduct, readCartItems, writeCartItems } from "@/lib/cart";
+import {
+  addCartItem,
+  canAddProductToCart,
+  readCartItems,
+  writeCartItems,
+  type CartProductSnapshot
+} from "@/lib/cart";
 
 type AddToCartButtonProps = {
-  productSlug: string;
+  product: CartProductSnapshot;
 };
 
-export function AddToCartButton({ productSlug }: AddToCartButtonProps) {
+export function AddToCartButton({ product }: AddToCartButtonProps) {
   const [message, setMessage] = useState("");
-  const product = getCartProduct(productSlug);
+  const isAvailable = canAddProductToCart(product);
 
   function handleAddToCart() {
-    if (!product) {
+    if (!isAvailable) {
       setMessage("This product is not available.");
       return;
     }
@@ -36,7 +42,7 @@ export function AddToCartButton({ productSlug }: AddToCartButtonProps) {
       <button
         type="button"
         onClick={handleAddToCart}
-        disabled={!product}
+        disabled={!isAvailable}
         className="w-full rounded-md bg-store-red px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-600 sm:w-auto"
       >
         Add to cart

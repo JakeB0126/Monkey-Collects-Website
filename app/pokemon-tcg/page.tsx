@@ -1,8 +1,10 @@
 import { ProductCard } from "@/components/product-card";
-import { getActiveProductsByCategory } from "@/lib/products";
+import { getActiveProductsByCategory } from "@/lib/products-db";
 
-export default function PokemonTcgPage() {
-  const products = getActiveProductsByCategory("pokemon_tcg");
+export const dynamic = "force-dynamic";
+
+export default async function PokemonTcgPage() {
+  const products = await getActiveProductsByCategory("pokemon_tcg");
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">

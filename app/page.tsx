@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { ProductCard } from "@/components/product-card";
-import { getFeaturedProducts } from "@/lib/products";
+import { getFeaturedProducts } from "@/lib/products-db";
 
-export default function HomePage() {
-  const featuredProducts = getFeaturedProducts();
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const featuredProducts = await getFeaturedProducts();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">

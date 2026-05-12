@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/add-to-cart-button";
-import { formatPrice, getActiveProductBySlug, getActiveProducts } from "@/lib/products";
+import { toCartProductSnapshot } from "@/lib/cart";
+import { formatPrice } from "@/lib/products";
+import { getActiveProductBySlug } from "@/lib/products-db";
+
+export const dynamic = "force-dynamic";
 
 type ProductDetailPageProps = {
   params: Promise<{
@@ -8,15 +12,9 @@ type ProductDetailPageProps = {
   }>;
 };
 
-export function generateStaticParams() {
-  return getActiveProducts().map((product) => ({
-    slug: product.slug
-  }));
-}
-
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { slug } = await params;
-  const product = getActiveProductBySlug(slug);
+  const product = await getActiveProductBySlug(slug);
 
   if (!product) {
     notFound();
@@ -43,7 +41,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               Status: {product.status}
             </span>
           </div>
-          <AddToCartButton productSlug={product.slug} />
+          <AddToCartButton product={toCartProductSnapshot(product)} />
         </section>
       </div>
     </div>
