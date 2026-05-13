@@ -136,9 +136,16 @@ export function CartView() {
   if (cartLines.length === 0) {
     return (
       <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-        <p className="text-base leading-7 text-neutral-700">
-          Your cart is empty. Add a product from a product detail page to start a local cart.
+        <h2 className="text-xl font-bold text-ink">Your cart is empty</h2>
+        <p className="mt-2 text-base leading-7 text-neutral-700">
+          Add sealed products or merch, then return here to review current stock and checkout.
         </p>
+        <a
+          href="/pokemon-tcg"
+          className="mt-5 inline-flex rounded-md bg-store-red px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700"
+        >
+          Shop Pokemon TCG
+        </a>
       </div>
     );
   }
@@ -147,12 +154,13 @@ export function CartView() {
     <div className="space-y-6">
       {isValidatingCart ? (
         <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm font-semibold text-neutral-700 shadow-sm">
-          Refreshing cart prices and availability...
+          Checking current prices and stock...
         </div>
       ) : null}
 
       {unavailableItems.length > 0 || stockIssues.length > 0 || priceChanges.length > 0 ? (
         <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-neutral-800 shadow-sm">
+          <p className="font-bold">Review your cart before checkout.</p>
           {[...unavailableItems, ...stockIssues, ...priceChanges].map((issue, index) => (
             <p key={`${issue.productId}-${index}`} className="font-semibold">
               {issue.message}
@@ -242,6 +250,9 @@ export function CartView() {
         <div>
           <p className="text-sm font-semibold uppercase text-neutral-500">Cart subtotal</p>
           <p className="mt-1 text-2xl font-bold text-store-red">{formatPrice(subtotalCents)}</p>
+          <p className="mt-1 text-sm leading-6 text-neutral-600">
+            Stock and pricing are verified again before Stripe Checkout opens.
+          </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
           <button
@@ -255,7 +266,7 @@ export function CartView() {
             type="button"
             onClick={handleCheckout}
             disabled={isValidatingCart || isStartingCheckout}
-            className="rounded-md bg-store-red px-4 py-3 text-sm font-bold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
+            className="rounded-md bg-store-red px-5 py-3 text-sm font-bold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
           >
             {isStartingCheckout ? "Starting checkout..." : "Checkout"}
           </button>

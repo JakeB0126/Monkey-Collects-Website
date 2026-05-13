@@ -11,13 +11,22 @@ export default async function PokemonTcgPage() {
       <p className="text-sm font-bold uppercase tracking-normal text-store-red">Pokemon TCG</p>
       <h1 className="mt-3 text-4xl font-bold tracking-normal text-ink">Sealed Pokemon products</h1>
       <p className="mt-4 max-w-2xl text-base leading-7 text-neutral-700">
-        Booster boxes, elite trainer boxes, bundles, collection boxes, tins, and packs will live here as inventory grows.
+        Booster boxes, elite trainer boxes, bundles, collection boxes, tins, and packs. Stock and pricing are verified
+        again before checkout.
       </p>
-      <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
+      {products.length > 0 ? (
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-8 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+          <p className="text-base leading-7 text-neutral-700">
+            No Pokemon TCG products are active right now. Check back soon for sealed inventory.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

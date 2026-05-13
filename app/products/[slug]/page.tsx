@@ -41,6 +41,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               Status: {product.status}
             </span>
           </div>
+          <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-4 text-sm leading-6 text-neutral-700 shadow-sm">
+            Availability and price are checked again on the server before Stripe Checkout starts.
+          </div>
           <AddToCartButton product={toCartProductSnapshot(product)} />
         </section>
       </div>

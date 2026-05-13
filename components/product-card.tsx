@@ -13,7 +13,7 @@ export function ProductCard({ product }: ProductCardProps) {
       href={`/products/${product.slug}`}
       className="group flex h-full flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div className="aspect-[4/3] bg-neutral-100">
+      <div className="aspect-[4/3] overflow-hidden bg-neutral-100">
         <img
           src={image}
           alt={product.name}
@@ -30,7 +30,10 @@ export function ProductCard({ product }: ProductCardProps) {
           <h3 className="text-base font-bold text-ink">{product.name}</h3>
           <p className="mt-1 line-clamp-2 text-sm leading-6 text-neutral-600">{product.description}</p>
         </div>
-        <p className="mt-auto text-lg font-bold text-store-red">{formatPrice(product.priceCents)}</p>
+        <div className="mt-auto flex items-center justify-between gap-3">
+          <p className="text-lg font-bold text-store-red">{formatPrice(product.priceCents)}</p>
+          <span className="text-sm font-bold text-ink transition group-hover:text-store-red">View</span>
+        </div>
       </div>
     </Link>
   );

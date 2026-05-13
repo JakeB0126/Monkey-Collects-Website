@@ -16,21 +16,27 @@ export default async function HomePage() {
             Monkey Collects
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-8 text-neutral-700">
-            Browse sealed Pokemon TCG products and collector merch with clear stock, simple browsing, and checkout coming next.
+            Browse sealed Pokemon TCG products and collector merch with live stock, secure hosted checkout, and simple
+            order confirmation.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/pokemon-tcg"
-              className="rounded-md bg-store-red px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700"
+              className="rounded-md bg-store-red px-5 py-3 text-center text-sm font-bold text-white transition hover:bg-red-700"
             >
               Shop Pokemon TCG
             </Link>
             <Link
               href="/merch"
-              className="rounded-md border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-ink transition hover:bg-neutral-100"
+              className="rounded-md border border-neutral-300 bg-white px-5 py-3 text-center text-sm font-bold text-ink transition hover:bg-neutral-100"
             >
               Shop Merch
             </Link>
+          </div>
+          <div className="mt-6 grid gap-3 text-sm font-semibold text-neutral-700 sm:grid-cols-3">
+            <p className="rounded-md border border-neutral-200 bg-white px-3 py-3">Server-checked stock</p>
+            <p className="rounded-md border border-neutral-200 bg-white px-3 py-3">Stripe Checkout</p>
+            <p className="rounded-md border border-neutral-200 bg-white px-3 py-3">Collector-focused inventory</p>
           </div>
         </div>
         <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
@@ -48,11 +54,19 @@ export default async function HomePage() {
             View products
           </Link>
         </div>
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {featuredProducts.length > 0 ? (
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+            <p className="text-base leading-7 text-neutral-700">
+              Featured products will appear here as soon as inventory is marked active and featured.
+            </p>
+          </div>
+        )}
       </section>
     </div>
   );
