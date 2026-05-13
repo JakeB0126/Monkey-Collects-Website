@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { validateCartItems, type CartValidationIssue } from "@/app/cart/actions";
+import {
+  startCheckout,
+  validateCartItems,
+  type CartValidationIssue,
+  type CartValidationResult
+} from "@/app/cart/actions";
 import {
   getCartLines,
   getCartSubtotalCents,
@@ -21,11 +26,36 @@ export function CartView() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [hasLoadedCart, setHasLoadedCart] = useState(false);
   const [isValidatingCart, setIsValidatingCart] = useState(false);
+  const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const [unavailableItems, setUnavailableItems] = useState<CartValidationIssue[]>([]);
   const [stockIssues, setStockIssues] = useState<CartValidationIssue[]>([]);
   const [priceChanges, setPriceChanges] = useState<CartValidationIssue[]>([]);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const cartLines = useMemo(() => getCartLines(cartItems), [cartItems]);
   const subtotalCents = getCartSubtotalCents(cartLines);
+
+  function applyValidationResult(result: CartValidationResult) {
+    const nextCartItems: CartItem[] = result.validItems.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      product: {
+        id: item.productId,
+        slug: item.slug,
+        name: item.name,
+        productType: item.productType,
+        priceCents: item.priceCents,
+        stockQuantity: item.stockQuantity,
+        status: item.status,
+        images: item.images
+      }
+    }));
+
+    setCartItems(nextCartItems);
+    writeCartItems(nextCartItems);
+    setUnavailableItems(result.unavailableItems);
+    setStockIssues(result.stockIssues);
+    setPriceChanges(result.priceChanges);
+  }
 
   useEffect(() => {
     const storedItems = readCartItems();
@@ -45,28 +75,7 @@ export function CartView() {
         priceCents: item.product.priceCents
       }))
     )
-      .then((result) => {
-        const nextCartItems: CartItem[] = result.validItems.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          product: {
-            id: item.productId,
-            slug: item.slug,
-            name: item.name,
-            productType: item.productType,
-            priceCents: item.priceCents,
-            stockQuantity: item.stockQuantity,
-            status: item.status,
-            images: item.images
-          }
-        }));
-
-        setCartItems(nextCartItems);
-        writeCartItems(nextCartItems);
-        setUnavailableItems(result.unavailableItems);
-        setStockIssues(result.stockIssues);
-        setPriceChanges(result.priceChanges);
-      })
+      .then(applyValidationResult)
       .catch(() => {
         setUnavailableItems([
           {
@@ -83,6 +92,37 @@ export function CartView() {
   function saveCartItems(nextCartItems: CartItem[]) {
     setCartItems(nextCartItems);
     writeCartItems(nextCartItems);
+    setCheckoutError(null);
+  }
+
+  async function handleCheckout() {
+    setCheckoutError(null);
+    setIsStartingCheckout(true);
+
+    try {
+      const result = await startCheckout(
+        cartItems.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          priceCents: item.product.priceCents
+        }))
+      );
+
+      if (result.status === "success") {
+        window.location.assign(result.checkoutUrl);
+        return;
+      }
+
+      setCheckoutError(result.message);
+
+      if (result.status === "cart_error") {
+        applyValidationResult(result.validation);
+      }
+    } catch {
+      setCheckoutError("Checkout could not be started. Please try again.");
+    } finally {
+      setIsStartingCheckout(false);
+    }
   }
 
   if (!hasLoadedCart) {
@@ -118,6 +158,12 @@ export function CartView() {
               {issue.message}
             </p>
           ))}
+        </div>
+      ) : null}
+
+      {checkoutError ? (
+        <div className="rounded-lg border border-store-red bg-red-50 p-4 text-sm font-semibold text-store-red shadow-sm">
+          {checkoutError}
         </div>
       ) : null}
 
@@ -197,13 +243,23 @@ export function CartView() {
           <p className="text-sm font-semibold uppercase text-neutral-500">Cart subtotal</p>
           <p className="mt-1 text-2xl font-bold text-store-red">{formatPrice(subtotalCents)}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => saveCartItems([])}
-          className="rounded-md border border-neutral-300 bg-white px-4 py-3 text-sm font-bold transition hover:bg-neutral-100"
-        >
-          Clear cart
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={() => saveCartItems([])}
+            className="rounded-md border border-neutral-300 bg-white px-4 py-3 text-sm font-bold transition hover:bg-neutral-100"
+          >
+            Clear cart
+          </button>
+          <button
+            type="button"
+            onClick={handleCheckout}
+            disabled={isValidatingCart || isStartingCheckout}
+            className="rounded-md bg-store-red px-4 py-3 text-sm font-bold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
+          >
+            {isStartingCheckout ? "Starting checkout..." : "Checkout"}
+          </button>
+        </div>
       </div>
     </div>
   );

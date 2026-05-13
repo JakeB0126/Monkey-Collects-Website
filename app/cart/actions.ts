@@ -1,7 +1,9 @@
 "use server";
 
+import { createPendingOrderFromValidatedCartItems } from "@/lib/orders";
 import { getPrismaClient } from "@/lib/prisma";
 import { type ProductStatus } from "@/lib/products";
+import { getStripeClient } from "@/lib/stripe";
 
 export type CartValidationInputItem = {
   productId: string;
@@ -35,6 +37,50 @@ export type CartValidationResult = {
   priceChanges: CartValidationIssue[];
   subtotalCents: number;
 };
+
+export type CheckoutStartResult =
+  | {
+      status: "success";
+      checkoutUrl: string;
+      orderId: string;
+    }
+  | {
+      status: "cart_error";
+      message: string;
+      validation: CartValidationResult;
+    }
+  | {
+      status: "server_error";
+      message: string;
+    };
+
+function getEmptyCartValidationResult(): CartValidationResult {
+  return {
+    validItems: [],
+    unavailableItems: [],
+    stockIssues: [],
+    priceChanges: [],
+    subtotalCents: 0
+  };
+}
+
+function isValidCheckoutInputItem(item: unknown): item is CartValidationInputItem {
+  return (
+    typeof item === "object" &&
+    item !== null &&
+    typeof (item as CartValidationInputItem).productId === "string" &&
+    Number.isInteger((item as CartValidationInputItem).quantity) &&
+    (item as CartValidationInputItem).quantity > 0
+  );
+}
+
+function getSiteUrl() {
+  return (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/+$/, "");
+}
+
+function getStripeImageUrls(item: ValidatedCartItem) {
+  return item.images.filter((image) => image.startsWith("https://") || image.startsWith("http://")).slice(0, 1);
+}
 
 export async function validateCartItems(items: CartValidationInputItem[]): Promise<CartValidationResult> {
   const requestedItems = items.filter(
@@ -130,4 +176,104 @@ export async function validateCartItems(items: CartValidationInputItem[]): Promi
     priceChanges,
     subtotalCents: validItems.reduce((subtotal, item) => subtotal + item.lineSubtotalCents, 0)
   };
+}
+
+export async function startCheckout(items: CartValidationInputItem[]): Promise<CheckoutStartResult> {
+  if (!Array.isArray(items) || items.length === 0) {
+    return {
+      status: "cart_error",
+      message: "Add at least one item before checkout.",
+      validation: getEmptyCartValidationResult()
+    };
+  }
+
+  if (!items.every(isValidCheckoutInputItem)) {
+    return {
+      status: "cart_error",
+      message: "Cart contains an invalid item. Refresh your cart and try again.",
+      validation: getEmptyCartValidationResult()
+    };
+  }
+
+  const validation = await validateCartItems(items);
+
+  if (validation.validItems.length === 0) {
+    return {
+      status: "cart_error",
+      message: "Your cart no longer has any available items.",
+      validation
+    };
+  }
+
+  if (
+    validation.unavailableItems.length > 0 ||
+    validation.stockIssues.length > 0 ||
+    validation.priceChanges.length > 0
+  ) {
+    return {
+      status: "cart_error",
+      message: "Your cart changed. Review the updated cart before checkout.",
+      validation
+    };
+  }
+
+  try {
+    const stripe = getStripeClient();
+    const order = await createPendingOrderFromValidatedCartItems({
+      items: validation.validItems
+    });
+    const siteUrl = getSiteUrl();
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      client_reference_id: order.id,
+      line_items: validation.validItems.map((item) => {
+        const images = getStripeImageUrls(item);
+
+        return {
+          quantity: item.quantity,
+          price_data: {
+            currency: "usd",
+            unit_amount: item.priceCents,
+            product_data: {
+              name: item.name,
+              description: item.productType,
+              images: images.length > 0 ? images : undefined,
+              metadata: {
+                productId: item.productId,
+                productSlug: item.slug
+              }
+            }
+          }
+        };
+      }),
+      metadata: {
+        orderId: order.id
+      },
+      payment_intent_data: {
+        metadata: {
+          orderId: order.id
+        }
+      },
+      success_url: `${siteUrl}/cart?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${siteUrl}/cart?checkout=canceled`
+    });
+
+    if (!session.url) {
+      return {
+        status: "server_error",
+        message: "Stripe did not return a checkout URL. Please try again."
+      };
+    }
+
+    return {
+      status: "success",
+      checkoutUrl: session.url,
+      orderId: order.id
+    };
+  } catch {
+    return {
+      status: "server_error",
+      message: "Checkout could not be started. Check Stripe configuration and try again."
+    };
+  }
 }

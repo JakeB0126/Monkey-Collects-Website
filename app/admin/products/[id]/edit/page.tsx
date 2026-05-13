@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { updateProduct } from "@/app/admin/products/actions";
+import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { ProductForm } from "@/components/admin/product-form";
 import { getProductForAdminById } from "@/lib/products-db";
 
@@ -26,6 +27,9 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
       <p className="mt-4 max-w-2xl text-base leading-7 text-neutral-700">
         Update product details, stock, visibility, and featured placement.
       </p>
+      <div className="mt-6">
+        <AdminLogoutButton />
+      </div>
       <ProductForm action={updateProduct.bind(null, product.id)} product={product} submitLabel="Save product" />
     </div>
   );

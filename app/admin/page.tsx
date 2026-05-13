@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { formatPrice } from "@/lib/products";
 import { getAllProductsForAdmin } from "@/lib/products-db";
 
@@ -14,13 +15,20 @@ export default async function AdminPage() {
       <p className="mt-4 max-w-2xl text-base leading-7 text-neutral-700">
         Manage all database products, including draft, hidden, and sold out items.
       </p>
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap gap-3">
         <Link
           href="/admin/products/new"
           className="inline-flex rounded-md bg-store-red px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700"
         >
           Create product
         </Link>
+        <Link
+          href="/admin/orders"
+          className="inline-flex rounded-md border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-ink transition hover:bg-neutral-100"
+        >
+          View orders
+        </Link>
+        <AdminLogoutButton />
       </div>
 
       <div className="mt-8 overflow-x-auto rounded-lg border border-neutral-200 bg-white shadow-sm">

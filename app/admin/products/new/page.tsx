@@ -1,5 +1,6 @@
 import { ProductForm } from "@/components/admin/product-form";
 import { createProduct } from "@/app/admin/products/actions";
+import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,9 @@ export default function NewProductPage() {
       <p className="mt-4 max-w-2xl text-base leading-7 text-neutral-700">
         Add a product row for the storefront. Products only appear publicly when status is active.
       </p>
+      <div className="mt-6">
+        <AdminLogoutButton />
+      </div>
       <ProductForm action={createProduct} submitLabel="Create product" />
     </div>
   );
