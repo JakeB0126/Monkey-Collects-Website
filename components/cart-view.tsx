@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { validateCartItems, type CartValidationIssue } from "@/app/cart/actions";
 import {
   getCartLines,
   getCartSubtotalCents,
@@ -12,9 +13,17 @@ import {
 } from "@/lib/cart";
 import { formatPrice } from "@/lib/products";
 
+function getIssuesForProduct(productId: string, issues: CartValidationIssue[]) {
+  return issues.filter((issue) => issue.productId === productId);
+}
+
 export function CartView() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [hasLoadedCart, setHasLoadedCart] = useState(false);
+  const [isValidatingCart, setIsValidatingCart] = useState(false);
+  const [unavailableItems, setUnavailableItems] = useState<CartValidationIssue[]>([]);
+  const [stockIssues, setStockIssues] = useState<CartValidationIssue[]>([]);
+  const [priceChanges, setPriceChanges] = useState<CartValidationIssue[]>([]);
   const cartLines = useMemo(() => getCartLines(cartItems), [cartItems]);
   const subtotalCents = getCartSubtotalCents(cartLines);
 
@@ -23,6 +32,52 @@ export function CartView() {
 
     setCartItems(storedItems);
     setHasLoadedCart(true);
+
+    if (storedItems.length === 0) {
+      return;
+    }
+
+    setIsValidatingCart(true);
+    validateCartItems(
+      storedItems.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        priceCents: item.product.priceCents
+      }))
+    )
+      .then((result) => {
+        const nextCartItems: CartItem[] = result.validItems.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          product: {
+            id: item.productId,
+            slug: item.slug,
+            name: item.name,
+            productType: item.productType,
+            priceCents: item.priceCents,
+            stockQuantity: item.stockQuantity,
+            status: item.status,
+            images: item.images
+          }
+        }));
+
+        setCartItems(nextCartItems);
+        writeCartItems(nextCartItems);
+        setUnavailableItems(result.unavailableItems);
+        setStockIssues(result.stockIssues);
+        setPriceChanges(result.priceChanges);
+      })
+      .catch(() => {
+        setUnavailableItems([
+          {
+            productId: "cart-validation",
+            message: "Cart could not be refreshed. Please try again."
+          }
+        ]);
+      })
+      .finally(() => {
+        setIsValidatingCart(false);
+      });
   }, []);
 
   function saveCartItems(nextCartItems: CartItem[]) {
@@ -50,9 +105,29 @@ export function CartView() {
 
   return (
     <div className="space-y-6">
+      {isValidatingCart ? (
+        <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm font-semibold text-neutral-700 shadow-sm">
+          Refreshing cart prices and availability...
+        </div>
+      ) : null}
+
+      {unavailableItems.length > 0 || stockIssues.length > 0 || priceChanges.length > 0 ? (
+        <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-neutral-800 shadow-sm">
+          {[...unavailableItems, ...stockIssues, ...priceChanges].map((issue, index) => (
+            <p key={`${issue.productId}-${index}`} className="font-semibold">
+              {issue.message}
+            </p>
+          ))}
+        </div>
+      ) : null}
+
       <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
         {cartLines.map((line) => {
           const image = line.product.images[0] ?? "/product-placeholder.svg";
+          const lineIssues = [
+            ...getIssuesForProduct(line.product.id, stockIssues),
+            ...getIssuesForProduct(line.product.id, priceChanges)
+          ];
 
           return (
             <div
@@ -72,6 +147,11 @@ export function CartView() {
                   <p className="mt-1 text-sm text-neutral-700">
                     Line subtotal: {formatPrice(line.lineSubtotalCents)}
                   </p>
+                  {lineIssues.map((issue) => (
+                    <p key={issue.message} className="mt-2 text-sm font-semibold text-store-red">
+                      {issue.message}
+                    </p>
+                  ))}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 md:justify-end">
                   <button
