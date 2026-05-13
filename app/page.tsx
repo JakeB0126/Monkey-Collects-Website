@@ -1,25 +1,32 @@
 import Link from "next/link";
-import { ProductCard } from "@/components/product-card";
+import { FeaturedProductsCarousel } from "@/components/featured-products-carousel";
 import { getFeaturedProducts } from "@/lib/products-db";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const featuredProducts = await getFeaturedProducts();
+  const carouselProducts = featuredProducts.map(
+    ({ id, slug, name, description, productType, priceCents, stockQuantity, images }) => ({
+      id,
+      slug,
+      name,
+      description,
+      productType,
+      priceCents,
+      stockQuantity,
+      images
+    })
+  );
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <section className="grid gap-8 py-8 md:grid-cols-[1.1fr_0.9fr] md:items-center">
-        <div>
-          <p className="text-sm font-bold uppercase tracking-normal text-store-red">Sealed Pokemon and merch</p>
-          <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-normal text-ink sm:text-5xl">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <section className="grid gap-8 py-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-center">
+        <div className="max-w-xl">
+          <h1 className="font-display text-5xl font-black tracking-normal text-ink sm:text-6xl lg:text-7xl">
             Monkey Collects
           </h1>
-          <p className="mt-4 max-w-2xl text-lg leading-8 text-neutral-700">
-            Browse sealed Pokemon TCG products and collector merch with live stock, secure hosted checkout, and simple
-            order confirmation.
-          </p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/pokemon-tcg"
               className="rounded-md bg-store-red px-5 py-3 text-center text-sm font-bold text-white transition hover:bg-red-700"
@@ -33,35 +40,29 @@ export default async function HomePage() {
               Shop Merch
             </Link>
           </div>
-          <div className="mt-6 grid gap-3 text-sm font-semibold text-neutral-700 sm:grid-cols-3">
-            <p className="rounded-md border border-neutral-200 bg-white px-3 py-3">Server-checked stock</p>
-            <p className="rounded-md border border-neutral-200 bg-white px-3 py-3">Stripe Checkout</p>
-            <p className="rounded-md border border-neutral-200 bg-white px-3 py-3">Collector-focused inventory</p>
-          </div>
         </div>
-        <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
-          <img src="/product-placeholder.svg" alt="" className="aspect-[4/3] w-full object-cover" />
+        <div className="overflow-hidden rounded-lg border border-amber-300 bg-store-card shadow-xl shadow-amber-950/10">
+          <img
+            src="/baby-monkey-collects-hero.png"
+            alt="Baby Monkey Collects mascot in a cozy jungle collector studio with plush collectibles."
+            className="aspect-[1707/921] w-full object-cover"
+          />
         </div>
       </section>
 
-      <section className="py-8">
+      <section className="py-10">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-bold uppercase tracking-normal text-store-blue">Featured</p>
-            <h2 className="mt-2 text-2xl font-bold text-ink">Ready for the shelf</h2>
+            <h2 className="font-display text-3xl font-black text-ink">Featured</h2>
           </div>
-          <Link href="/pokemon-tcg" className="hidden text-sm font-bold text-store-red hover:underline sm:inline">
+          <Link href="/pokemon-tcg" className="hidden text-sm font-bold text-store-red transition hover:text-red-800 sm:inline">
             View products
           </Link>
         </div>
-        {featuredProducts.length > 0 ? (
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+        {carouselProducts.length > 0 ? (
+          <FeaturedProductsCarousel products={carouselProducts} />
         ) : (
-          <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="mt-6 rounded-lg border border-amber-200 bg-store-card p-6 shadow-sm">
             <p className="text-base leading-7 text-neutral-700">
               Featured products will appear here as soon as inventory is marked active and featured.
             </p>

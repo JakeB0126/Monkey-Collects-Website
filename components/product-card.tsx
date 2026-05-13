@@ -2,8 +2,13 @@ import Link from "next/link";
 import { formatPrice, type Product } from "@/lib/products";
 
 type ProductCardProps = {
-  product: Product;
+  product: ProductCardProduct;
 };
+
+export type ProductCardProduct = Pick<
+  Product,
+  "id" | "slug" | "name" | "description" | "productType" | "priceCents" | "stockQuantity" | "images"
+>;
 
 export function ProductCard({ product }: ProductCardProps) {
   const image = product.images[0] ?? "/product-placeholder.svg";
@@ -11,7 +16,7 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Link
       href={`/products/${product.slug}`}
-      className="group flex h-full flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      className="group flex h-full flex-col overflow-hidden rounded-lg border border-amber-200 bg-store-card shadow-sm transition hover:-translate-y-0.5 hover:border-store-gold hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-store-green"
     >
       <div className="aspect-[4/3] overflow-hidden bg-neutral-100">
         <img

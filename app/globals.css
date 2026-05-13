@@ -4,7 +4,7 @@
 
 :root {
   color-scheme: light;
-  background: #fffdf8;
+  background: #edd2a3;
 }
 
 * {
@@ -13,11 +13,34 @@
 
 body {
   margin: 0;
-  background: #fffdf8;
-  color: #171717;
+  background: #edd2a3;
+  color: #2b170e;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.header-link {
+  position: relative;
+}
+
+.header-link::after {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.35rem;
+  left: 0.75rem;
+  height: 2px;
+  content: "";
+  background: currentColor;
+  border-radius: 999px;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 180ms ease;
+}
+
+.header-link:hover::after,
+.header-link:focus-visible::after {
+  transform: scaleX(1);
 }

@@ -8,13 +8,18 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        display: ["Avenir Next", "Trebuchet MS", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: ["Inter", "Avenir Next", "ui-sans-serif", "system-ui", "sans-serif"]
+      },
       colors: {
-        ink: "#171717",
-        paper: "#fffdf8",
+        ink: "#2b170e",
+        paper: "#edd2a3",
+        "store-card": "#fff8e8",
         "store-red": "#d9272e",
-        "store-gold": "#f2b705",
+        "store-gold": "#d89a22",
         "store-blue": "#2563eb",
-        "store-green": "#15803d"
+        "store-green": "#034832"
       }
     }
   },
