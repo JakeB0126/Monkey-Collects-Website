@@ -1,6 +1,7 @@
 "use server";
 
 import { createPendingOrderFromValidatedCartItems } from "@/lib/orders";
+import { getCurrentCustomerSession } from "@/lib/customer-auth";
 import { getPrismaClient } from "@/lib/prisma";
 import { type ProductStatus } from "@/lib/products";
 import { getStripeClient } from "@/lib/stripe";
@@ -219,7 +220,10 @@ export async function startCheckout(items: CartValidationInputItem[]): Promise<C
 
   try {
     const stripe = getStripeClient();
+    const customerSession = await getCurrentCustomerSession();
     const order = await createPendingOrderFromValidatedCartItems({
+      customerEmail: customerSession?.email,
+      userId: customerSession?.id,
       items: validation.validItems
     });
     const siteUrl = getSiteUrl();

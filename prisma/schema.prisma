@@ -44,6 +44,7 @@ model Product {
   images        String[]
   featured      Boolean         @default(false)
   orderItems    OrderItem[]
+  cartItems     CartItem[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -51,8 +52,44 @@ model Product {
   @@index([featured, status])
 }
 
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  name         String?
+  savedCart    SavedCart?
+  orders       Order[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model SavedCart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String    @id @default(cuid())
+  cartId    String
+  productId String
+  quantity  Int
+  cart      SavedCart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
+}
+
 model Order {
   id                      String        @id @default(cuid())
+  userId                  String?
   customerEmail           String?
   status                  OrderStatus   @default(pending)
   paymentStatus           PaymentStatus @default(unpaid)
@@ -60,10 +97,12 @@ model Order {
   stripePaymentIntentId   String?       @unique
   subtotalCents           Int
   totalCents              Int
+  user                    User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   items                   OrderItem[]
   createdAt               DateTime      @default(now())
   updatedAt               DateTime      @updatedAt
 
+  @@index([userId])
   @@index([status, paymentStatus])
   @@index([createdAt])
 }

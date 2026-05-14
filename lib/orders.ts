@@ -7,6 +7,7 @@ export type PaymentStatus = "unpaid" | "paid" | "failed" | "refunded";
 
 export type PendingOrderSummary = {
   id: string;
+  userId: string | null;
   customerEmail: string | null;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
@@ -32,6 +33,7 @@ export type ConfirmPaidOrderResult =
 
 const adminOrderSelect = {
   id: true,
+  userId: true,
   customerEmail: true,
   status: true,
   paymentStatus: true,
@@ -63,6 +65,38 @@ export type AdminOrder = Prisma.OrderGetPayload<{
   select: typeof adminOrderSelect;
 }>;
 
+const customerOrderSelect = {
+  id: true,
+  userId: true,
+  customerEmail: true,
+  status: true,
+  paymentStatus: true,
+  subtotalCents: true,
+  totalCents: true,
+  createdAt: true,
+  updatedAt: true,
+  items: {
+    orderBy: {
+      createdAt: "asc" as const
+    },
+    select: {
+      id: true,
+      productId: true,
+      quantity: true,
+      unitPriceCents: true,
+      lineTotalCents: true,
+      productName: true,
+      productSlug: true,
+      productImage: true,
+      createdAt: true
+    }
+  }
+};
+
+export type CustomerOrder = Prisma.OrderGetPayload<{
+  select: typeof customerOrderSelect;
+}>;
+
 function sortOrdersByNewestFirst() {
   return {
     createdAt: "desc" as const
@@ -90,11 +124,25 @@ export async function getOrderForAdminById(id: string) {
   }) satisfies Promise<AdminOrder | null>;
 }
 
+export async function getOrdersForUser(userId: string) {
+  const prisma = getPrismaClient();
+
+  return prisma.order.findMany({
+    where: {
+      userId
+    },
+    orderBy: sortOrdersByNewestFirst(),
+    select: customerOrderSelect
+  }) satisfies Promise<CustomerOrder[]>;
+}
+
 export async function createPendingOrderFromValidatedCartItems({
   customerEmail,
+  userId,
   items
 }: {
   customerEmail?: string | null;
+  userId?: string | null;
   items: ValidatedCartItem[];
 }): Promise<PendingOrderSummary> {
   if (items.length === 0) {
@@ -105,6 +153,7 @@ export async function createPendingOrderFromValidatedCartItems({
   const prisma = getPrismaClient();
   const order = await prisma.order.create({
     data: {
+      userId: userId || null,
       customerEmail: customerEmail?.trim() || null,
       status: "pending",
       paymentStatus: "unpaid",
@@ -124,6 +173,7 @@ export async function createPendingOrderFromValidatedCartItems({
     },
     select: {
       id: true,
+      userId: true,
       customerEmail: true,
       status: true,
       paymentStatus: true,
@@ -139,6 +189,7 @@ export async function createPendingOrderFromValidatedCartItems({
 
   return {
     id: order.id,
+    userId: order.userId,
     customerEmail: order.customerEmail,
     status: order.status,
     paymentStatus: order.paymentStatus,
