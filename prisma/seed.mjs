@@ -62,6 +62,22 @@ const products = [
     updatedAt: new Date("2026-05-03T12:00:00.000Z")
   },
   {
+    id: "prod_sold_out_overlay_demo",
+    slug: "sold-out-overlay-demo",
+    name: "Sold Out Overlay Demo Product",
+    description:
+      "A storefront-only demo product with zero stock so the sold-out card overlay can be reviewed safely.",
+    category: "pokemon_tcg",
+    productType: "Demo Product",
+    priceCents: 1999,
+    stockQuantity: 0,
+    status: "active",
+    images: ["/product-placeholder.svg"],
+    featured: false,
+    createdAt: new Date("2026-05-03T18:00:00.000Z"),
+    updatedAt: new Date("2026-05-03T18:00:00.000Z")
+  },
+  {
     id: "prod_limited_collection_box",
     slug: "limited-collection-box",
     name: "Limited Collection Box",

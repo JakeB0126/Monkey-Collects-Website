@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   startCheckout,
@@ -127,25 +128,43 @@ export function CartView() {
 
   if (!hasLoadedCart) {
     return (
-      <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-        <p className="text-base leading-7 text-neutral-700">Loading cart...</p>
+      <div className="flex items-center gap-4 rounded-lg border border-amber-200 bg-store-card p-5 shadow-sm">
+        <img
+          src="/mascots/mascot-loading-coffee.png"
+          alt=""
+          className="h-20 w-20 shrink-0 object-contain"
+          aria-hidden="true"
+        />
+        <p className="text-base font-semibold leading-7 text-neutral-700">Loading cart...</p>
       </div>
     );
   }
 
   if (cartLines.length === 0) {
     return (
-      <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-bold text-ink">Your cart is empty</h2>
-        <p className="mt-2 text-base leading-7 text-neutral-700">
-          Add sealed products or merch, then return here to review current stock and checkout.
+      <div className="rounded-lg border border-amber-200 bg-store-card p-6 text-center shadow-sm sm:p-8">
+        <img
+          src="/mascots/mascot-empty-cart.png"
+          alt="Baby Monkey mascot sitting beside an empty shopping basket."
+          className="mx-auto h-44 w-44 object-contain sm:h-56 sm:w-56"
+        />
+        <h2 className="mt-4 font-display text-2xl font-black text-ink">Your cart is empty</h2>
+        <p className="mx-auto mt-3 max-w-md text-base leading-7 text-neutral-700">
+          Looks like the shelf is still open. Add sealed products or merch, then come back to review stock before
+          checkout.
         </p>
-        <a
+        <Link
           href="/pokemon-tcg"
-          className="mt-5 inline-flex rounded-md bg-store-red px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700"
+          className="mt-6 inline-flex rounded-md bg-store-red px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700"
         >
           Shop Pokemon TCG
-        </a>
+        </Link>
+        <Link
+          href="/checkout/success?preview=true&order_id=preview-order&session_id=preview-session"
+          className="mt-3 inline-flex rounded-md border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-ink transition hover:bg-neutral-100"
+        >
+          Preview success screen
+        </Link>
       </div>
     );
   }
@@ -270,6 +289,12 @@ export function CartView() {
           >
             {isStartingCheckout ? "Starting checkout..." : "Checkout"}
           </button>
+          <Link
+            href="/checkout/success?preview=true&order_id=preview-order&session_id=preview-session"
+            className="rounded-md border border-neutral-300 bg-white px-4 py-3 text-center text-sm font-bold text-ink transition hover:bg-neutral-100"
+          >
+            Preview success screen
+          </Link>
         </div>
       </div>
     </div>

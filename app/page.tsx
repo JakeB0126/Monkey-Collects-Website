@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const featuredProducts = await getFeaturedProducts();
   const carouselProducts = featuredProducts.map(
-    ({ id, slug, name, description, productType, priceCents, stockQuantity, images }) => ({
+    ({ id, slug, name, description, productType, priceCents, stockQuantity, status, images }) => ({
       id,
       slug,
       name,
@@ -15,6 +15,7 @@ export default async function HomePage() {
       productType,
       priceCents,
       stockQuantity,
+      status,
       images
     })
   );
