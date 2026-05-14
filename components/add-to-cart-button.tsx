@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { syncCurrentCustomerCart } from "@/app/cart/saved-actions";
 import {
   addCartItem,
   canAddProductToCart,
@@ -28,6 +29,12 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
     const nextItem = nextCart.find((item) => item.productId === product.id);
 
     writeCartItems(nextCart);
+    void syncCurrentCustomerCart(
+      nextCart.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity
+      }))
+    );
 
     if (nextItem?.quantity === product.stockQuantity) {
       setMessage(`Added. Cart has the maximum available quantity: ${product.stockQuantity}.`);

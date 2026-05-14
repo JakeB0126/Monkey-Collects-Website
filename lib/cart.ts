@@ -24,6 +24,7 @@ export type CartProductSnapshot = {
 };
 
 export const CART_STORAGE_KEY = "monkey-collects-cart";
+export const CART_UPDATED_EVENT = "monkey-collects-cart-updated";
 
 export function toCartProductSnapshot(product: Product): CartProductSnapshot {
   return {
@@ -86,6 +87,7 @@ export function readCartItems(): CartItem[] {
 
 export function writeCartItems(cartItems: CartItem[]) {
   window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+  window.dispatchEvent(new CustomEvent(CART_UPDATED_EVENT, { detail: { cartItems } }));
 }
 
 export function addCartItem(cartItems: CartItem[], product: CartProductSnapshot) {

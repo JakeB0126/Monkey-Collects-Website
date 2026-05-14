@@ -38,6 +38,7 @@ model Product {
   description   String
   category      ProductCategory
   productType   String
+  pokemonSet    String?
   priceCents    Int
   stockQuantity Int
   status        ProductStatus   @default(draft)
@@ -49,18 +50,35 @@ model Product {
   updatedAt     DateTime        @updatedAt
 
   @@index([category, status])
+  @@index([category, status, productType])
+  @@index([category, status, pokemonSet])
   @@index([featured, status])
 }
 
 model User {
-  id           String      @id @default(cuid())
-  email        String      @unique
-  passwordHash String
-  name         String?
-  savedCart    SavedCart?
-  orders       Order[]
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  passwordHash        String
+  name                String?
+  savedCart           SavedCart?
+  orders              Order[]
+  passwordResetTokens PasswordResetToken[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model SavedCart {

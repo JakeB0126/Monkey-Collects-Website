@@ -27,6 +27,7 @@ function getInitialState(product?: Product): ProductFormState {
       description: product.description,
       category: product.category,
       productType: product.productType,
+      pokemonSet: product.pokemonSet ?? "",
       priceCents: String(product.priceCents),
       stockQuantity: String(product.stockQuantity),
       status: product.status,
@@ -129,6 +130,16 @@ export function ProductForm({ action, product, submitLabel }: ProductFormProps) 
             className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
           />
           <FieldError message={state.fieldErrors.productType} />
+        </label>
+        <label className="block">
+          <span className="text-sm font-bold text-neutral-700">Pokemon Set</span>
+          <input
+            name="pokemonSet"
+            defaultValue={values.pokemonSet}
+            placeholder="White Flare"
+            className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          />
+          <FieldError message={state.fieldErrors.pokemonSet} />
         </label>
       </div>
 

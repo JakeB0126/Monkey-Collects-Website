@@ -1,30 +1,34 @@
+import { socialLinks } from "@/lib/social-links";
+
 export default function AboutPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <p className="text-sm font-bold uppercase tracking-normal text-store-red">About Us</p>
-      <h1 className="mt-3 text-4xl font-bold tracking-normal text-ink">Built for sealed collectors.</h1>
+      <h1 className="mt-3 text-4xl font-bold tracking-normal text-ink">
+        A cozy home for collectors, pack openings, and community.
+      </h1>
       <div className="mt-6 space-y-5 text-base leading-8 text-neutral-700">
         <p>
-          Baby Monkey Collects is a small collector-first storefront focused on sealed Pokemon TCG products and merch.
-        </p>
-        <p>
-          This V1 keeps things simple: browse available products, review current stock, and check out through Stripe.
-          Orders are confirmed on the server after Stripe reports payment, so inventory stays tied to completed payments.
+          Baby Monkey Collects is a small collector-first storefront focused on Pokemon TCG products, merch, and the
+          shared fun of finding the next favorite piece for your shelf or next opening.
         </p>
       </div>
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-          <p className="text-sm font-bold text-ink">Clear stock</p>
-          <p className="mt-2 text-sm leading-6 text-neutral-600">Products only show publicly when active.</p>
-        </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-          <p className="text-sm font-bold text-ink">Hosted checkout</p>
-          <p className="mt-2 text-sm leading-6 text-neutral-600">Payments run through Stripe Checkout.</p>
-        </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-          <p className="text-sm font-bold text-ink">Order records</p>
-          <p className="mt-2 text-sm leading-6 text-neutral-600">Order items keep product snapshots.</p>
-        </div>
+      <div className="mt-9 grid gap-4 sm:grid-cols-3">
+        {socialLinks.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={link.label}
+            className="flex min-h-40 flex-col items-center justify-center gap-4 rounded-lg border border-amber-200 bg-store-card p-6 text-store-green shadow-sm transition hover:-translate-y-0.5 hover:border-store-gold hover:bg-amber-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-store-green [&>span:first-child>span]:!text-2xl [&>span:first-child>svg]:h-11 [&>span:first-child>svg]:w-11"
+          >
+            <span className="flex h-20 w-20 items-center justify-center rounded-full bg-store-green text-amber-50 shadow-sm">
+              {link.icon}
+            </span>
+            <span className="text-sm font-bold text-ink">{link.label}</span>
+          </a>
+        ))}
       </div>
     </div>
   );

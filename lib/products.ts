@@ -11,6 +11,7 @@ export type Product = {
   description: string;
   category: ProductCategory;
   productType: string;
+  pokemonSet: string | null;
   priceCents: number;
   stockQuantity: number;
   status: ProductStatus;

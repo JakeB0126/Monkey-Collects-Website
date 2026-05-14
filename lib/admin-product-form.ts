@@ -4,6 +4,7 @@ export type ProductFormValues = {
   description: string;
   category: string;
   productType: string;
+  pokemonSet: string;
   priceCents: string;
   stockQuantity: string;
   status: string;
@@ -24,6 +25,7 @@ export const emptyProductFormState: ProductFormState = {
     description: "",
     category: "pokemon_tcg",
     productType: "",
+    pokemonSet: "",
     priceCents: "0",
     stockQuantity: "0",
     status: "draft",

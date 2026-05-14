@@ -8,6 +8,7 @@ import {
   type CartValidationIssue,
   type CartValidationResult
 } from "@/app/cart/actions";
+import { syncCurrentCustomerCart } from "@/app/cart/saved-actions";
 import {
   getCartLines,
   getCartSubtotalCents,
@@ -21,6 +22,15 @@ import { formatPrice } from "@/lib/products";
 
 function getIssuesForProduct(productId: string, issues: CartValidationIssue[]) {
   return issues.filter((issue) => issue.productId === productId);
+}
+
+function syncSavedCart(cartItems: CartItem[]) {
+  void syncCurrentCustomerCart(
+    cartItems.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity
+    }))
+  );
 }
 
 export function CartView() {
@@ -53,6 +63,7 @@ export function CartView() {
 
     setCartItems(nextCartItems);
     writeCartItems(nextCartItems);
+    syncSavedCart(nextCartItems);
     setUnavailableItems(result.unavailableItems);
     setStockIssues(result.stockIssues);
     setPriceChanges(result.priceChanges);
@@ -93,6 +104,7 @@ export function CartView() {
   function saveCartItems(nextCartItems: CartItem[]) {
     setCartItems(nextCartItems);
     writeCartItems(nextCartItems);
+    syncSavedCart(nextCartItems);
     setCheckoutError(null);
   }
 

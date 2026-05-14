@@ -1,4 +1,4 @@
-import { randomBytes, scrypt as scryptCallback, timingSafeEqual, createHmac } from "node:crypto";
+import { randomBytes, scrypt as scryptCallback, timingSafeEqual, createHmac, createHash } from "node:crypto";
 import { promisify } from "node:util";
 import { cookies } from "next/headers";
 import { Prisma } from "@prisma/client";
@@ -10,6 +10,7 @@ const scrypt = promisify(scryptCallback);
 const PASSWORD_HASH_PREFIX = "scrypt";
 const PASSWORD_KEY_LENGTH = 64;
 const CUSTOMER_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+const PASSWORD_RESET_TOKEN_MAX_AGE_MINUTES = 60;
 
 export type CustomerSession = {
   id: string;
@@ -23,6 +24,14 @@ function normalizeEmail(email: string) {
 
 function getSessionSecret() {
   return process.env.CUSTOMER_SESSION_SECRET || process.env.AUTH_SECRET || process.env.ADMIN_PASSWORD || null;
+}
+
+function getSiteUrl() {
+  return (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/+$/, "");
+}
+
+function hashResetToken(token: string) {
+  return createHash("sha256").update(token).digest("base64url");
 }
 
 function signSessionUserId(userId: string) {
@@ -142,6 +151,100 @@ export async function verifyCustomerLoginCredentials(email: string, password: st
     email: user.email,
     name: user.name
   };
+}
+
+export async function createPasswordResetRequest(email: string) {
+  const normalizedEmail = normalizeEmail(email);
+  const prisma = getPrismaClient();
+  const user = await prisma.user.findUnique({
+    where: {
+      email: normalizedEmail
+    },
+    select: {
+      id: true
+    }
+  });
+  const token = randomBytes(32).toString("base64url");
+
+  if (!user) {
+    return {
+      resetUrl: `${getSiteUrl()}/auth/reset-password?token=${token}`
+    };
+  }
+
+  await prisma.passwordResetToken.updateMany({
+    where: {
+      userId: user.id,
+      usedAt: null
+    },
+    data: {
+      usedAt: new Date()
+    }
+  });
+
+  await prisma.passwordResetToken.create({
+    data: {
+      userId: user.id,
+      tokenHash: hashResetToken(token),
+      expiresAt: new Date(Date.now() + PASSWORD_RESET_TOKEN_MAX_AGE_MINUTES * 60 * 1000)
+    }
+  });
+
+  return {
+    resetUrl: `${getSiteUrl()}/auth/reset-password?token=${token}`
+  };
+}
+
+export async function resetCustomerPasswordWithToken(token: string, password: string) {
+  const prisma = getPrismaClient();
+  const resetToken = await prisma.passwordResetToken.findUnique({
+    where: {
+      tokenHash: hashResetToken(token)
+    },
+    select: {
+      id: true,
+      userId: true,
+      expiresAt: true,
+      usedAt: true
+    }
+  });
+
+  if (!resetToken || resetToken.usedAt || resetToken.expiresAt.getTime() <= Date.now()) {
+    throw new Error("This reset link is invalid or expired.");
+  }
+
+  const passwordHash = await hashPassword(password);
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: {
+        id: resetToken.userId
+      },
+      data: {
+        passwordHash
+      }
+    }),
+    prisma.passwordResetToken.update({
+      where: {
+        id: resetToken.id
+      },
+      data: {
+        usedAt: new Date()
+      }
+    }),
+    prisma.passwordResetToken.updateMany({
+      where: {
+        userId: resetToken.userId,
+        usedAt: null,
+        id: {
+          not: resetToken.id
+        }
+      },
+      data: {
+        usedAt: new Date()
+      }
+    })
+  ]);
 }
 
 export async function setCustomerSession(userId: string) {

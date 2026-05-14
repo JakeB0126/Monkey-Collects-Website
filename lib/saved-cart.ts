@@ -73,29 +73,106 @@ export async function syncLocalCartItemsToSavedCart(userId: string, items: Saved
     }
   });
   const validProductIds = new Set(products.map((product) => product.id));
+  const mergeItems = normalizedItems.filter((item) => validProductIds.has(item.productId));
+
+  if (mergeItems.length === 0) {
+    return readSavedCartItemsWithProducts(userId);
+  }
+
+  const existingItems = await prisma.cartItem.findMany({
+    where: {
+      cartId: cart.id,
+      productId: {
+        in: mergeItems.map((item) => item.productId)
+      }
+    },
+    select: {
+      productId: true,
+      quantity: true
+    }
+  });
+  const existingQuantityByProductId = new Map(existingItems.map((item) => [item.productId, item.quantity]));
 
   await prisma.$transaction(
-    normalizedItems
-      .filter((item) => validProductIds.has(item.productId))
-      .map((item) =>
-        prisma.cartItem.upsert({
-          where: {
-            cartId_productId: {
-              cartId: cart.id,
-              productId: item.productId
-            }
-          },
-          update: {
-            quantity: item.quantity
-          },
-          create: {
+    mergeItems.map((item) =>
+      prisma.cartItem.upsert({
+        where: {
+          cartId_productId: {
             cartId: cart.id,
-            productId: item.productId,
-            quantity: item.quantity
-          }
-        })
-      )
+            productId: item.productId
+          },
+        },
+        update: {
+          quantity: Math.max(existingQuantityByProductId.get(item.productId) ?? 0, item.quantity)
+        },
+        create: {
+          cartId: cart.id,
+          productId: item.productId,
+          quantity: item.quantity
+        }
+      })
+    )
   );
+
+  return readSavedCartItemsWithProducts(userId);
+}
+
+export async function replaceSavedCartItemsForUser(userId: string, items: SavedCartInputItem[]) {
+  const normalizedItems = normalizeSavedCartItems(items);
+  const prisma = getPrismaClient();
+  const cart = await getOrCreateSavedCartForUser(userId);
+
+  if (normalizedItems.length === 0) {
+    await prisma.cartItem.deleteMany({
+      where: {
+        cartId: cart.id
+      }
+    });
+
+    return readSavedCartItemsWithProducts(userId);
+  }
+
+  const products = await prisma.product.findMany({
+    where: {
+      id: {
+        in: normalizedItems.map((item) => item.productId)
+      }
+    },
+    select: {
+      id: true
+    }
+  });
+  const validProductIds = new Set(products.map((product) => product.id));
+  const validItems = normalizedItems.filter((item) => validProductIds.has(item.productId));
+
+  await prisma.$transaction([
+    prisma.cartItem.deleteMany({
+      where: {
+        cartId: cart.id,
+        productId: {
+          notIn: validItems.map((item) => item.productId)
+        }
+      }
+    }),
+    ...validItems.map((item) =>
+      prisma.cartItem.upsert({
+        where: {
+          cartId_productId: {
+            cartId: cart.id,
+            productId: item.productId
+          }
+        },
+        update: {
+          quantity: item.quantity
+        },
+        create: {
+          cartId: cart.id,
+          productId: item.productId,
+          quantity: item.quantity
+        }
+      })
+    )
+  ]);
 
   return readSavedCartItemsWithProducts(userId);
 }

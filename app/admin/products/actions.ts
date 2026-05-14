@@ -12,6 +12,7 @@ type ProductFormData = {
   description: string;
   category: ProductCategory;
   productType: string;
+  pokemonSet: string | null;
   priceCents: number;
   stockQuantity: number;
   status: ProductStatus;
@@ -26,6 +27,7 @@ function getSubmittedValues(formData: FormData): ProductFormValues {
     description: String(formData.get("description") ?? ""),
     category: String(formData.get("category") ?? ""),
     productType: String(formData.get("productType") ?? ""),
+    pokemonSet: String(formData.get("pokemonSet") ?? ""),
     priceCents: String(formData.get("priceCents") ?? ""),
     stockQuantity: String(formData.get("stockQuantity") ?? ""),
     status: String(formData.get("status") ?? ""),
@@ -114,6 +116,7 @@ function getProductFormData(formData: FormData): { data?: ProductFormData; state
     description: getRequiredString(values, "description", fieldErrors),
     category: category as ProductCategory,
     productType: getRequiredString(values, "productType", fieldErrors),
+    pokemonSet: values.pokemonSet.trim() || null,
     priceCents: getNonNegativeInteger(values, "priceCents", fieldErrors),
     stockQuantity: getNonNegativeInteger(values, "stockQuantity", fieldErrors),
     status: status as ProductStatus,
