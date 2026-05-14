@@ -86,24 +86,18 @@ Before checkout, verify product availability and current price on the server.
 
 When Stripe is added, Stripe webhooks are the source of truth for completed payment. Never mark an order as paid based only on a success-page redirect.
 
-## V1 Boundaries
+V1 core ecommerce is implemented.
 
-Build first:
-- Home page
-- Product listing page
-- Product detail page
-- Cart page
-- Basic admin product management
-- PostgreSQL product storage
-- Stripe Checkout later
+Current focus:
+- V1.1 customer accounts
+- saved carts
+- order history
+- storefront polish
+- deployment stability
 
-Do not build unless explicitly requested:
-- User accounts
-- Reviews
-- Wishlists
-- Auctions
-- Offers
-- Trades
-- Multi-seller marketplace features
-- Loyalty systems
-- Advanced analytics
+Do not add large new systems unless explicitly requested.
+
+For roadmap ideas, see:
+- `agents/ROADMAP.md`
+- `agents/FRONTEND-DIRECTION.md`
+- `agents/BACKEND-NOTES.md`
