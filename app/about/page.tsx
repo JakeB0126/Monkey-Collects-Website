@@ -5,7 +5,7 @@ export default function AboutPage() {
       <h1 className="mt-3 text-4xl font-bold tracking-normal text-ink">Built for sealed collectors.</h1>
       <div className="mt-6 space-y-5 text-base leading-8 text-neutral-700">
         <p>
-          Monkey Collects is a small collector-first storefront focused on sealed Pokemon TCG products and merch.
+          Baby Monkey Collects is a small collector-first storefront focused on sealed Pokemon TCG products and merch.
         </p>
         <p>
           This V1 keeps things simple: browse available products, review current stock, and check out through Stripe.

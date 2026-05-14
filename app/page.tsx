@@ -25,7 +25,7 @@ export default async function HomePage() {
       <section className="grid gap-8 py-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-center">
         <div className="max-w-xl">
           <h1 className="font-display text-5xl font-black tracking-normal text-ink sm:text-6xl lg:text-7xl">
-            Monkey Collects
+            Baby Monkey Collects
           </h1>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
