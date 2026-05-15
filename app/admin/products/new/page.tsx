@@ -1,10 +1,13 @@
 import { ProductForm } from "@/components/admin/product-form";
 import { createProduct } from "@/app/admin/products/actions";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
+import { getAllProductFilterValueOptions } from "@/lib/product-filter-values";
 
 export const dynamic = "force-dynamic";
 
-export default function NewProductPage() {
+export default async function NewProductPage() {
+  const filterOptions = await getAllProductFilterValueOptions();
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
       <p className="text-sm font-bold uppercase tracking-normal text-store-red">Admin</p>
@@ -15,7 +18,7 @@ export default function NewProductPage() {
       <div className="mt-6">
         <AdminLogoutButton />
       </div>
-      <ProductForm action={createProduct} submitLabel="Create product" />
+      <ProductForm action={createProduct} filterOptions={filterOptions} submitLabel="Create product" />
     </div>
   );
 }

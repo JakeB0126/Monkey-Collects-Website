@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { updateProduct } from "@/app/admin/products/actions";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { ProductForm } from "@/components/admin/product-form";
+import { getAllProductFilterValueOptions } from "@/lib/product-filter-values";
 import { getProductForAdminById } from "@/lib/products-db";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,7 @@ type EditProductPageProps = {
 
 export default async function EditProductPage({ params }: EditProductPageProps) {
   const { id } = await params;
-  const product = await getProductForAdminById(id);
+  const [product, filterOptions] = await Promise.all([getProductForAdminById(id), getAllProductFilterValueOptions()]);
 
   if (!product) {
     notFound();
@@ -30,7 +31,12 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
       <div className="mt-6">
         <AdminLogoutButton />
       </div>
-      <ProductForm action={updateProduct.bind(null, product.id)} product={product} submitLabel="Save product" />
+      <ProductForm
+        action={updateProduct.bind(null, product.id)}
+        filterOptions={filterOptions}
+        product={product}
+        submitLabel="Save product"
+      />
     </div>
   );
 }

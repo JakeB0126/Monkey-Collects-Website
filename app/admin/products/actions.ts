@@ -156,6 +156,7 @@ function getDatabaseErrorState(state: ProductFormState): ProductFormState {
 function revalidateProductPages() {
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidatePath("/admin/products");
   revalidatePath("/pokemon-tcg");
   revalidatePath("/merch");
   revalidatePath("/products/[slug]", "page");
@@ -191,7 +192,7 @@ export async function createProduct(
   }
 
   revalidateProductPages();
-  redirect("/admin");
+  redirect("/admin/products");
 }
 
 export async function updateProduct(
@@ -231,5 +232,21 @@ export async function updateProduct(
   }
 
   revalidateProductPages();
-  redirect("/admin");
+  redirect("/admin/products");
+}
+
+export async function hideProduct(id: string) {
+  const prisma = getPrismaClient();
+
+  await prisma.product.update({
+    where: {
+      id
+    },
+    data: {
+      status: "hidden"
+    }
+  });
+
+  revalidateProductPages();
+  redirect("/admin/products");
 }

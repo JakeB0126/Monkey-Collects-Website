@@ -161,13 +161,15 @@ export async function createPasswordResetRequest(email: string) {
       email: normalizedEmail
     },
     select: {
-      id: true
+      id: true,
+      email: true
     }
   });
   const token = randomBytes(32).toString("base64url");
 
   if (!user) {
     return {
+      email: null,
       resetUrl: `${getSiteUrl()}/auth/reset-password?token=${token}`
     };
   }
@@ -191,6 +193,7 @@ export async function createPasswordResetRequest(email: string) {
   });
 
   return {
+    email: user.email,
     resetUrl: `${getSiteUrl()}/auth/reset-password?token=${token}`
   };
 }

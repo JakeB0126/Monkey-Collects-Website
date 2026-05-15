@@ -1,4 +1,5 @@
 import { getPrismaClient } from "@/lib/prisma";
+import { getProductFilterValueOptions } from "@/lib/product-filter-values";
 import type { Product, ProductCategory } from "@/lib/products";
 
 export type ProductAvailabilityFilter = "all" | "in_stock" | "out_of_stock";
@@ -33,10 +34,6 @@ function getProductListOrderBy(sort: ProductSortOption = "featured") {
   }
 
   return [{ featured: "desc" as const }, sortProductsByNewestFirst()];
-}
-
-function isNonEmptyString(value: string | null): value is string {
-  return Boolean(value);
 }
 
 export async function getFeaturedProducts() {
@@ -77,21 +74,26 @@ export async function getActiveProductsByCategory(category: ProductCategory, fil
 
 export async function getActiveProductFilterOptions(category: ProductCategory) {
   const prisma = getPrismaClient();
-  const products = await prisma.product.findMany({
-    where: {
-      category,
-      status: "active"
-    },
-    select: {
-      productType: true,
-      pokemonSet: true,
-      priceCents: true
-    }
-  });
+  const [products, managedOptions] = await Promise.all([
+    prisma.product.findMany({
+      where: {
+        category,
+        status: "active"
+      },
+      select: {
+        productType: true,
+        pokemonSet: true,
+        priceCents: true
+      }
+    }),
+    getProductFilterValueOptions(category)
+  ]);
+  const activeProductTypes = new Set(products.map((product) => product.productType));
+  const activePokemonSets = new Set(products.map((product) => product.pokemonSet).filter(Boolean));
 
   return {
-    productTypes: [...new Set(products.map((product) => product.productType).filter(Boolean))].sort(),
-    pokemonSets: [...new Set(products.map((product) => product.pokemonSet).filter(isNonEmptyString))].sort(),
+    productTypes: managedOptions.productTypes.filter((productType) => activeProductTypes.has(productType)),
+    pokemonSets: managedOptions.pokemonSets.filter((pokemonSet) => activePokemonSets.has(pokemonSet)),
     minPriceCents: products.length > 0 ? Math.min(...products.map((product) => product.priceCents)) : 0,
     maxPriceCents: products.length > 0 ? Math.max(...products.map((product) => product.priceCents)) : 0
   };

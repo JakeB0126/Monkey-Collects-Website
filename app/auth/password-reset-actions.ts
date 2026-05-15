@@ -1,6 +1,7 @@
 "use server";
 
 import { createPasswordResetRequest, resetCustomerPasswordWithToken } from "@/lib/customer-auth";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 export type PasswordResetRequestState = {
   status: "idle" | "success" | "error";
@@ -36,9 +37,19 @@ export async function requestPasswordReset(
 
   const result = await createPasswordResetRequest(email);
 
+  if (result.email) {
+    try {
+      await sendPasswordResetEmail(result.email, {
+        resetUrl: result.resetUrl
+      });
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : "Password reset email could not be sent.");
+    }
+  }
+
   return {
     status: "success",
-    message: "If an account exists for that email, a password reset link is ready.",
+    message: "If an account exists for that email, a password reset link has been sent.",
     resetUrl: process.env.NODE_ENV === "production" ? undefined : result.resetUrl
   };
 }

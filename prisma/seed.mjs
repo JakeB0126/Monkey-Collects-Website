@@ -179,6 +179,34 @@ for (const product of products) {
   });
 }
 
+const filterValues = new Map();
+
+for (const product of products) {
+  filterValues.set(`product_type:${product.category}:${product.productType}`, {
+    kind: "product_type",
+    category: product.category,
+    value: product.productType
+  });
+
+  if (product.pokemonSet) {
+    filterValues.set(`pokemon_set:${product.category}:${product.pokemonSet}`, {
+      kind: "pokemon_set",
+      category: product.category,
+      value: product.pokemonSet
+    });
+  }
+}
+
+for (const filterValue of filterValues.values()) {
+  await prisma.productFilterValue.upsert({
+    where: {
+      kind_category_value: filterValue
+    },
+    update: {},
+    create: filterValue
+  });
+}
+
 await prisma.$disconnect();
 
-console.log(`Seeded ${products.length} products.`);
+console.log(`Seeded ${products.length} products and ${filterValues.size} filter values.`);

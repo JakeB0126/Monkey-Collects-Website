@@ -41,7 +41,10 @@ export default async function AdminOrdersPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-      <p className="text-sm font-bold uppercase tracking-normal text-store-red">Admin</p>
+      <Link href="/admin" className="text-sm font-bold text-store-red transition hover:text-red-700">
+        Back to dashboard
+      </Link>
+      <p className="mt-6 text-sm font-bold uppercase tracking-normal text-store-red">Admin</p>
       <h1 className="mt-3 text-4xl font-bold tracking-normal text-ink">Orders</h1>
       <p className="mt-4 max-w-2xl text-base leading-7 text-neutral-700">
         Review recent orders, Stripe references, payment state, and orders that need manual resolution.

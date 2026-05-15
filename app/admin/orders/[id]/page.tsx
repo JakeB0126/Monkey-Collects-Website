@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { updateOrderFulfillmentAction } from "@/app/admin/orders/actions";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
-import { getOrderForAdminById, type AdminOrder } from "@/lib/orders";
+import { getOrderForAdminById, orderStatuses, type AdminOrder } from "@/lib/orders";
 import { formatPrice } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +10,9 @@ export const dynamic = "force-dynamic";
 type AdminOrderDetailPageProps = {
   params: Promise<{
     id: string;
+  }>;
+  searchParams: Promise<{
+    status?: string;
   }>;
 };
 
@@ -43,8 +47,46 @@ function StatusBadge({ children, className }: { children: string; className: str
   );
 }
 
-export default async function AdminOrderDetailPage({ params }: AdminOrderDetailPageProps) {
-  const { id } = await params;
+function formatDateTimeLocal(date?: Date | null) {
+  if (!date) {
+    return "";
+  }
+
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
+}
+
+function SaveMessage({ status }: { status?: string }) {
+  if (status === "saved") {
+    return (
+      <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-700 shadow-sm">
+        Fulfillment details saved.
+      </div>
+    );
+  }
+
+  if (status === "email-error") {
+    return (
+      <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800 shadow-sm">
+        Fulfillment details saved, but the shipping email could not be sent. Check the Resend environment variables and
+        resend manually if needed.
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-store-red shadow-sm">
+        Fulfillment details could not be saved.
+      </div>
+    );
+  }
+
+  return null;
+}
+
+export default async function AdminOrderDetailPage({ params, searchParams }: AdminOrderDetailPageProps) {
+  const [{ id }, { status }] = await Promise.all([params, searchParams]);
   const order = await getOrderForAdminById(id);
 
   if (!order) {
@@ -70,6 +112,8 @@ export default async function AdminOrderDetailPage({ params }: AdminOrderDetailP
           refund in Stripe.
         </div>
       ) : null}
+
+      <SaveMessage status={status} />
 
       <div className="mt-8 grid gap-4 rounded-lg border border-neutral-200 bg-white p-5 shadow-sm md:grid-cols-2">
         <div>
@@ -109,6 +153,71 @@ export default async function AdminOrderDetailPage({ params }: AdminOrderDetailP
           <p className="mt-1 text-sm text-neutral-700">{formatDate(order.updatedAt)}</p>
         </div>
       </div>
+
+      <form
+        action={updateOrderFulfillmentAction.bind(null, order.id)}
+        className="mt-8 rounded-lg border border-neutral-200 bg-white p-5 shadow-sm"
+      >
+        <h2 className="text-xl font-bold text-ink">Fulfillment</h2>
+        <div className="mt-5 grid gap-5 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-sm font-bold text-neutral-700">Order Status</span>
+            <select
+              name="status"
+              defaultValue={order.status}
+              className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            >
+              {orderStatuses.map((orderStatus) => (
+                <option key={orderStatus} value={orderStatus}>
+                  {orderStatus}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm font-bold text-neutral-700">Shipped Date</span>
+            <input
+              name="shippedAt"
+              type="datetime-local"
+              defaultValue={formatDateTimeLocal(order.shippedAt)}
+              className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm font-bold text-neutral-700">Shipping Carrier</span>
+            <input
+              name="shippingCarrier"
+              defaultValue={order.shippingCarrier ?? ""}
+              placeholder="USPS"
+              className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm font-bold text-neutral-700">Tracking Number</span>
+            <input
+              name="trackingNumber"
+              defaultValue={order.trackingNumber ?? ""}
+              className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            className="rounded-md bg-store-red px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700"
+          >
+            Save fulfillment
+          </button>
+          <p className="text-sm text-neutral-600">
+            Saving a shipped date marks pending orders fulfilled and sends one shipping email when possible.
+          </p>
+        </div>
+        {order.shippingConfirmationEmailSentAt ? (
+          <p className="mt-4 text-sm font-semibold text-green-700">
+            Shipping email sent {formatDate(order.shippingConfirmationEmailSentAt)}.
+          </p>
+        ) : null}
+      </form>
 
       <div className="mt-8 overflow-x-auto rounded-lg border border-neutral-200 bg-white shadow-sm">
         <table className="min-w-full divide-y divide-neutral-200 text-left text-sm">

@@ -1,104 +1,90 @@
 import Link from "next/link";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
-import { formatPrice } from "@/lib/products";
+import { getProductFilterValuesForAdmin } from "@/lib/product-filter-values";
+import { getRecentOrdersForAdmin } from "@/lib/orders";
 import { getAllProductsForAdmin } from "@/lib/products-db";
 
 export const dynamic = "force-dynamic";
 
+function DashboardLink({
+  description,
+  href,
+  label
+}: {
+  description: string;
+  href: string;
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-store-red hover:bg-red-50"
+    >
+      <p className="text-lg font-bold text-ink">{label}</p>
+      <p className="mt-2 text-sm leading-6 text-neutral-700">{description}</p>
+    </Link>
+  );
+}
+
 export default async function AdminPage() {
-  const products = await getAllProductsForAdmin();
+  const [products, orders, filterValues] = await Promise.all([
+    getAllProductsForAdmin(),
+    getRecentOrdersForAdmin(),
+    getProductFilterValuesForAdmin()
+  ]);
+  const activeProducts = products.filter((product) => product.status === "active").length;
+  const paidOrders = orders.filter((order) => order.paymentStatus === "paid").length;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       <p className="text-sm font-bold uppercase tracking-normal text-store-red">Admin</p>
-      <h1 className="mt-3 text-4xl font-bold tracking-normal text-ink">Product overview</h1>
+      <h1 className="mt-3 text-4xl font-bold tracking-normal text-ink">Owner dashboard</h1>
       <p className="mt-4 max-w-2xl text-base leading-7 text-neutral-700">
-        Manage all database products, including draft, hidden, and sold out items.
+        One place to manage products, orders, and the storefront filter values customers see.
       </p>
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Link
-          href="/admin/products/new"
-          className="inline-flex rounded-md bg-store-red px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700"
-        >
-          Create product
-        </Link>
-        <Link
-          href="/admin/orders"
-          className="inline-flex rounded-md border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-ink transition hover:bg-neutral-100"
-        >
-          View orders
-        </Link>
+      <div className="mt-6">
         <AdminLogoutButton />
       </div>
 
-      <div className="mt-8 overflow-x-auto rounded-lg border border-neutral-200 bg-white shadow-sm">
-        <table className="min-w-full divide-y divide-neutral-200 text-left text-sm">
-          <thead className="bg-neutral-50 text-xs uppercase text-neutral-500">
-            <tr>
-              <th scope="col" className="px-4 py-3 font-bold">
-                Product
-              </th>
-              <th scope="col" className="px-4 py-3 font-bold">
-                Type
-              </th>
-              <th scope="col" className="px-4 py-3 font-bold">
-                Category
-              </th>
-              <th scope="col" className="px-4 py-3 font-bold">
-                Price
-              </th>
-              <th scope="col" className="px-4 py-3 font-bold">
-                Stock
-              </th>
-              <th scope="col" className="px-4 py-3 font-bold">
-                Status
-              </th>
-              <th scope="col" className="px-4 py-3 font-bold">
-                Featured
-              </th>
-              <th scope="col" className="px-4 py-3 font-bold">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-200">
-            {products.map((product) => {
-              const image = product.images[0] ?? "/product-placeholder.svg";
+      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-bold uppercase text-neutral-500">Products</p>
+          <p className="mt-2 text-3xl font-bold text-ink">{products.length}</p>
+          <p className="mt-1 text-sm text-neutral-600">{activeProducts} active</p>
+        </div>
+        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-bold uppercase text-neutral-500">Recent orders</p>
+          <p className="mt-2 text-3xl font-bold text-ink">{orders.length}</p>
+          <p className="mt-1 text-sm text-neutral-600">{paidOrders} paid</p>
+        </div>
+        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-bold uppercase text-neutral-500">Filter values</p>
+          <p className="mt-2 text-3xl font-bold text-ink">{filterValues.length}</p>
+          <p className="mt-1 text-sm text-neutral-600">Product types and sets</p>
+        </div>
+      </div>
 
-              return (
-                <tr key={product.id}>
-                  <td className="px-4 py-4">
-                    <div className="flex min-w-64 items-center gap-3">
-                      <img
-                        src={image}
-                        alt=""
-                        className="h-14 w-14 rounded-md border border-neutral-200 bg-neutral-100 object-cover"
-                      />
-                      <div>
-                        <p className="font-semibold text-ink">{product.name}</p>
-                        <p className="mt-1 text-xs text-neutral-500">{product.slug}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-neutral-700">{product.productType}</td>
-                  <td className="px-4 py-4 text-neutral-700">{product.category}</td>
-                  <td className="px-4 py-4 font-semibold text-store-red">{formatPrice(product.priceCents)}</td>
-                  <td className="px-4 py-4 text-neutral-700">{product.stockQuantity}</td>
-                  <td className="px-4 py-4 text-neutral-700">{product.status}</td>
-                  <td className="px-4 py-4 text-neutral-700">{product.featured ? "Yes" : "No"}</td>
-                  <td className="px-4 py-4">
-                    <Link
-                      href={`/admin/products/${product.id}/edit`}
-                      className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-bold text-ink transition hover:bg-neutral-100"
-                    >
-                      Edit
-                    </Link>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <DashboardLink
+          href="/admin/products"
+          label="Products"
+          description="View, edit, feature, draft, sell out, or hide products."
+        />
+        <DashboardLink
+          href="/admin/products/new"
+          label="Add product"
+          description="Create a new product using managed product type and set values."
+        />
+        <DashboardLink
+          href="/admin/orders"
+          label="Orders"
+          description="Review payments, order items, Stripe references, and fulfillment state."
+        />
+        <DashboardLink
+          href="/admin/filters"
+          label="Filter/category management"
+          description="Manage product type and Pokemon set dropdown values for storefront filters."
+        />
       </div>
     </div>
   );

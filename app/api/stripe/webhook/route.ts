@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { confirmPaidOrderFromStripeCheckout } from "@/lib/orders";
+import { confirmPaidOrderFromStripeCheckout, sendOrderConfirmationEmailForOrder } from "@/lib/orders";
 import { getStripeClient } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -80,6 +80,15 @@ export async function POST(request: Request) {
   if (result.status === "inventory_failed") {
     console.error(result.message);
     return NextResponse.json({ error: result.message }, { status: 500 });
+  }
+
+  try {
+    await sendOrderConfirmationEmailForOrder(result.orderId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Order confirmation email could not be sent.";
+
+    console.error(message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 
   return NextResponse.json({ received: true, result });

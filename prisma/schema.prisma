@@ -18,6 +18,11 @@ enum ProductStatus {
   hidden
 }
 
+enum ProductFilterKind {
+  product_type
+  pokemon_set
+}
+
 enum OrderStatus {
   pending
   canceled
@@ -53,6 +58,18 @@ model Product {
   @@index([category, status, productType])
   @@index([category, status, pokemonSet])
   @@index([featured, status])
+}
+
+model ProductFilterValue {
+  id        String            @id @default(cuid())
+  kind      ProductFilterKind
+  category  ProductCategory
+  value     String
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@unique([kind, category, value])
+  @@index([kind, category])
 }
 
 model User {
@@ -106,19 +123,25 @@ model CartItem {
 }
 
 model Order {
-  id                      String        @id @default(cuid())
-  userId                  String?
-  customerEmail           String?
-  status                  OrderStatus   @default(pending)
-  paymentStatus           PaymentStatus @default(unpaid)
-  stripeCheckoutSessionId String?       @unique
-  stripePaymentIntentId   String?       @unique
-  subtotalCents           Int
-  totalCents              Int
-  user                    User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  items                   OrderItem[]
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
+  id                              String        @id @default(cuid())
+  orderNumber                     String?       @unique
+  userId                          String?
+  customerEmail                   String?
+  status                          OrderStatus   @default(pending)
+  paymentStatus                   PaymentStatus @default(unpaid)
+  stripeCheckoutSessionId         String?       @unique
+  stripePaymentIntentId           String?       @unique
+  trackingNumber                  String?
+  shippingCarrier                 String?
+  shippedAt                       DateTime?
+  orderConfirmationEmailSentAt    DateTime?
+  shippingConfirmationEmailSentAt DateTime?
+  subtotalCents                   Int
+  totalCents                      Int
+  user                            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items                           OrderItem[]
+  createdAt                       DateTime      @default(now())
+  updatedAt                       DateTime      @updatedAt
 
   @@index([userId])
   @@index([status, paymentStatus])

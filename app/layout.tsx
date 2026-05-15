@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { HeaderCartLink } from "@/components/header-cart-link";
+import { SiteFooter } from "@/components/site-footer";
 import { getCurrentCustomerSession } from "@/lib/customer-auth";
 import { getSavedCartForUser } from "@/lib/saved-cart";
 import { socialLinks } from "@/lib/social-links";
@@ -33,7 +34,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className="min-h-screen font-sans antialiased">
+      <body className="flex min-h-screen flex-col font-sans antialiased">
         <header className="border-b border-emerald-950 bg-store-green text-white shadow-sm">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
             <div className="flex items-center justify-end gap-3">
@@ -79,7 +80,8 @@ export default async function RootLayout({
             </div>
           </div>
         </header>
-        <main>{children}</main>
+        <main className="flex-1">{children}</main>
+        <SiteFooter />
       </body>
     </html>
   );

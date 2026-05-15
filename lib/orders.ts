@@ -1,12 +1,17 @@
+import { randomBytes } from "node:crypto";
 import type { ValidatedCartItem } from "@/app/cart/actions";
 import { Prisma } from "@prisma/client";
+import { sendOrderConfirmationEmail, sendShippingConfirmationEmail } from "@/lib/email";
 import { getPrismaClient } from "@/lib/prisma";
 
 export type OrderStatus = "pending" | "canceled" | "fulfilled";
 export type PaymentStatus = "unpaid" | "paid" | "failed" | "refunded";
 
+export const orderStatuses: OrderStatus[] = ["pending", "canceled", "fulfilled"];
+
 export type PendingOrderSummary = {
   id: string;
+  orderNumber: string | null;
   userId: string | null;
   customerEmail: string | null;
   status: OrderStatus;
@@ -33,12 +38,18 @@ export type ConfirmPaidOrderResult =
 
 const adminOrderSelect = {
   id: true,
+  orderNumber: true,
   userId: true,
   customerEmail: true,
   status: true,
   paymentStatus: true,
   stripeCheckoutSessionId: true,
   stripePaymentIntentId: true,
+  trackingNumber: true,
+  shippingCarrier: true,
+  shippedAt: true,
+  orderConfirmationEmailSentAt: true,
+  shippingConfirmationEmailSentAt: true,
   subtotalCents: true,
   totalCents: true,
   createdAt: true,
@@ -67,12 +78,16 @@ export type AdminOrder = Prisma.OrderGetPayload<{
 
 const customerOrderSelect = {
   id: true,
+  orderNumber: true,
   userId: true,
   customerEmail: true,
   status: true,
   paymentStatus: true,
   subtotalCents: true,
   totalCents: true,
+  trackingNumber: true,
+  shippingCarrier: true,
+  shippedAt: true,
   createdAt: true,
   updatedAt: true,
   items: {
@@ -97,10 +112,48 @@ export type CustomerOrder = Prisma.OrderGetPayload<{
   select: typeof customerOrderSelect;
 }>;
 
+const transactionalEmailOrderSelect = {
+  id: true,
+  orderNumber: true,
+  customerEmail: true,
+  status: true,
+  paymentStatus: true,
+  subtotalCents: true,
+  totalCents: true,
+  trackingNumber: true,
+  shippingCarrier: true,
+  shippedAt: true,
+  orderConfirmationEmailSentAt: true,
+  shippingConfirmationEmailSentAt: true,
+  items: {
+    orderBy: {
+      createdAt: "asc" as const
+    },
+    select: {
+      quantity: true,
+      unitPriceCents: true,
+      lineTotalCents: true,
+      productName: true
+    }
+  }
+};
+
+type TransactionalEmailOrder = Prisma.OrderGetPayload<{
+  select: typeof transactionalEmailOrderSelect;
+}>;
+
 function sortOrdersByNewestFirst() {
   return {
     createdAt: "desc" as const
   };
+}
+
+function generateOrderNumber() {
+  return `BMC-${new Date().getFullYear()}-${randomBytes(4).toString("hex").toUpperCase()}`;
+}
+
+function getOrderNumber(order: Pick<TransactionalEmailOrder, "id" | "orderNumber">) {
+  return order.orderNumber ?? `BMC-${order.id.slice(-8).toUpperCase()}`;
 }
 
 export async function getRecentOrdersForAdmin() {
@@ -153,6 +206,7 @@ export async function createPendingOrderFromValidatedCartItems({
   const prisma = getPrismaClient();
   const order = await prisma.order.create({
     data: {
+      orderNumber: generateOrderNumber(),
       userId: userId || null,
       customerEmail: customerEmail?.trim() || null,
       status: "pending",
@@ -173,6 +227,7 @@ export async function createPendingOrderFromValidatedCartItems({
     },
     select: {
       id: true,
+      orderNumber: true,
       userId: true,
       customerEmail: true,
       status: true,
@@ -189,6 +244,7 @@ export async function createPendingOrderFromValidatedCartItems({
 
   return {
     id: order.id,
+    orderNumber: order.orderNumber,
     userId: order.userId,
     customerEmail: order.customerEmail,
     status: order.status,
@@ -334,5 +390,131 @@ export async function confirmPaidOrderFromStripeCheckout({
       status: "paid",
       orderId: order.id
     };
+  });
+}
+
+export async function sendOrderConfirmationEmailForOrder(orderId: string) {
+  const prisma = getPrismaClient();
+  const order = await prisma.order.findUnique({
+    where: {
+      id: orderId
+    },
+    select: transactionalEmailOrderSelect
+  });
+
+  if (!order || !order.customerEmail || order.orderConfirmationEmailSentAt) {
+    return;
+  }
+
+  await sendOrderConfirmationEmail(order.customerEmail, {
+    orderNumber: getOrderNumber(order),
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    subtotalCents: order.subtotalCents,
+    totalCents: order.totalCents,
+    items: order.items
+  });
+
+  await prisma.order.update({
+    where: {
+      id: order.id
+    },
+    data: {
+      orderConfirmationEmailSentAt: new Date()
+    }
+  });
+}
+
+export async function sendShippingConfirmationEmailForOrder(orderId: string) {
+  const prisma = getPrismaClient();
+  const order = await prisma.order.findUnique({
+    where: {
+      id: orderId
+    },
+    select: transactionalEmailOrderSelect
+  });
+
+  if (!order || !order.customerEmail || !order.shippedAt || order.shippingConfirmationEmailSentAt) {
+    return false;
+  }
+
+  await sendShippingConfirmationEmail(order.customerEmail, {
+    orderNumber: getOrderNumber(order),
+    trackingNumber: order.trackingNumber,
+    shippingCarrier: order.shippingCarrier
+  });
+
+  await prisma.order.update({
+    where: {
+      id: order.id
+    },
+    data: {
+      shippingConfirmationEmailSentAt: new Date()
+    }
+  });
+
+  return true;
+}
+
+export async function updateOrderFulfillment({
+  orderId,
+  shippedAt,
+  shippingCarrier,
+  status,
+  trackingNumber
+}: {
+  orderId: string;
+  shippedAt: Date | null;
+  shippingCarrier?: string | null;
+  status: OrderStatus;
+  trackingNumber?: string | null;
+}) {
+  const prisma = getPrismaClient();
+  const nextStatus = shippedAt && status === "pending" ? "fulfilled" : status;
+  const order = await prisma.order.update({
+    where: {
+      id: orderId
+    },
+    data: {
+      status: nextStatus,
+      shippingCarrier: shippingCarrier?.trim() || null,
+      trackingNumber: trackingNumber?.trim() || null,
+      shippedAt
+    },
+    select: adminOrderSelect
+  });
+
+  let shippingEmailStatus: "sent" | "skipped" | "failed" = "skipped";
+
+  if (order.shippedAt && !order.shippingConfirmationEmailSentAt) {
+    try {
+      const sentShippingEmail = await sendShippingConfirmationEmailForOrder(order.id);
+      shippingEmailStatus = sentShippingEmail ? "sent" : "skipped";
+    } catch {
+      shippingEmailStatus = "failed";
+    }
+  }
+
+  return {
+    order,
+    shippingEmailStatus
+  };
+}
+
+export async function markOrderShipped({
+  orderId,
+  shippingCarrier,
+  trackingNumber
+}: {
+  orderId: string;
+  shippingCarrier?: string | null;
+  trackingNumber?: string | null;
+}) {
+  return updateOrderFulfillment({
+    orderId,
+    shippedAt: new Date(),
+    shippingCarrier,
+    status: "fulfilled",
+    trackingNumber
   });
 }
