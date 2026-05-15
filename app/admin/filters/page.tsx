@@ -1,16 +1,25 @@
 import Link from "next/link";
 import { createFilterValue, deleteFilterValue, updateFilterValue } from "@/app/admin/filters/actions";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
-import { getProductFilterValuesForAdmin, type ProductFilterValue } from "@/lib/product-filter-values";
-import { productCategories, type ProductCategory } from "@/lib/products";
+import {
+  getProductFilterValuesForAdmin,
+  type ProductFilterKind,
+  type ProductFilterValue
+} from "@/lib/product-filter-values";
+import type { ProductCategory } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 
 type AdminFiltersPageProps = {
   searchParams: Promise<{
+    category?: string;
     status?: string;
   }>;
 };
+
+function getSelectedCategory(category?: string): ProductCategory {
+  return category === "merch" ? "merch" : "pokemon_tcg";
+}
 
 function StatusMessage({ status }: { status?: string }) {
   if (status === "saved") {
@@ -40,73 +49,49 @@ function StatusMessage({ status }: { status?: string }) {
   return null;
 }
 
-function CategorySelect({ defaultValue }: { defaultValue: ProductCategory }) {
+function CategoryLink({
+  href,
+  isActive,
+  label
+}: {
+  href: string;
+  isActive: boolean;
+  label: string;
+}) {
   return (
-    <select
-      name="category"
-      defaultValue={defaultValue}
-      className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm"
+    <Link
+      href={href}
+      className={`rounded-md border px-4 py-2 text-sm font-bold transition ${
+        isActive
+          ? "border-store-red bg-store-red text-white hover:bg-red-700"
+          : "border-neutral-300 bg-white text-ink hover:bg-neutral-100"
+      }`}
     >
-      {productCategories.map((category) => (
-        <option key={category} value={category}>
-          {category}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function FilterValueRow({ filterValue }: { filterValue: ProductFilterValue }) {
-  return (
-    <tr>
-      <td className="px-4 py-4 text-neutral-700">{filterValue.kind === "product_type" ? "Product Type" : "Pokemon Set"}</td>
-      <td className="px-4 py-4">
-        <form action={updateFilterValue.bind(null, filterValue.id)} className="flex min-w-80 flex-wrap gap-2">
-          <input type="hidden" name="kind" value={filterValue.kind} />
-          <CategorySelect defaultValue={filterValue.category} />
-          <input
-            name="value"
-            required
-            defaultValue={filterValue.value}
-            className="min-w-48 rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          />
-          <button
-            type="submit"
-            className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-bold text-ink transition hover:bg-neutral-100"
-          >
-            Save
-          </button>
-        </form>
-      </td>
-      <td className="px-4 py-4">
-        <form action={deleteFilterValue.bind(null, filterValue.id)}>
-          <button
-            type="submit"
-            className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-bold text-ink transition hover:bg-neutral-100"
-          >
-            Remove
-          </button>
-        </form>
-      </td>
-    </tr>
+      {label}
+    </Link>
   );
 }
 
 function AddFilterValueForm({
-  defaultKind,
-  label
+  category,
+  kind,
+  label,
+  placeholder
 }: {
-  defaultKind: "product_type" | "pokemon_set";
+  category: ProductCategory;
+  kind: ProductFilterKind;
   label: string;
+  placeholder: string;
 }) {
   return (
     <form action={createFilterValue} className="mt-4 flex flex-wrap gap-3 rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-      <input type="hidden" name="kind" value={defaultKind} />
-      <CategorySelect defaultValue="pokemon_tcg" />
+      <input type="hidden" name="kind" value={kind} />
+      <input type="hidden" name="category" value={category} />
       <input
         name="value"
         required
-        placeholder={label}
+        aria-label={label}
+        placeholder={placeholder}
         className="min-w-60 flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm"
       />
       <button
@@ -119,8 +104,84 @@ function AddFilterValueForm({
   );
 }
 
+function FilterValueTable({
+  category,
+  emptyMessage,
+  filterValues,
+  kind
+}: {
+  category: ProductCategory;
+  emptyMessage: string;
+  filterValues: ProductFilterValue[];
+  kind: ProductFilterKind;
+}) {
+  const values = filterValues.filter((filterValue) => filterValue.kind === kind);
+
+  if (values.length === 0) {
+    return (
+      <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-5 text-sm leading-6 text-neutral-700 shadow-sm">
+        {emptyMessage}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 overflow-x-auto rounded-lg border border-neutral-200 bg-white shadow-sm">
+      <table className="min-w-full divide-y divide-neutral-200 text-left text-sm">
+        <thead className="bg-neutral-50 text-xs uppercase text-neutral-500">
+          <tr>
+            <th scope="col" className="px-4 py-3 font-bold">
+              Value
+            </th>
+            <th scope="col" className="px-4 py-3 font-bold">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-neutral-200">
+          {values.map((filterValue) => (
+            <tr key={filterValue.id}>
+              <td className="px-4 py-4">
+                <form action={updateFilterValue.bind(null, filterValue.id)} className="flex min-w-80 flex-wrap gap-2">
+                  <input type="hidden" name="kind" value={kind} />
+                  <input type="hidden" name="category" value={category} />
+                  <input
+                    name="value"
+                    required
+                    defaultValue={filterValue.value}
+                    className="min-w-48 rounded-md border border-neutral-300 px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-bold text-ink transition hover:bg-neutral-100"
+                  >
+                    Save
+                  </button>
+                </form>
+              </td>
+              <td className="px-4 py-4">
+                <form action={deleteFilterValue.bind(null, filterValue.id)}>
+                  <input type="hidden" name="category" value={category} />
+                  <button
+                    type="submit"
+                    className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-bold text-ink transition hover:bg-neutral-100"
+                  >
+                    Remove
+                  </button>
+                </form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default async function AdminFiltersPage({ searchParams }: AdminFiltersPageProps) {
-  const [{ status }, filterValues] = await Promise.all([searchParams, getProductFilterValuesForAdmin()]);
+  const [{ category, status }, allFilterValues] = await Promise.all([searchParams, getProductFilterValuesForAdmin()]);
+  const selectedCategory = getSelectedCategory(category);
+  const filterValues = allFilterValues.filter((filterValue) => filterValue.category === selectedCategory);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
@@ -130,46 +191,51 @@ export default async function AdminFiltersPage({ searchParams }: AdminFiltersPag
       <p className="mt-6 text-sm font-bold uppercase tracking-normal text-store-red">Admin</p>
       <h1 className="mt-3 text-4xl font-bold tracking-normal text-ink">Filter/category management</h1>
       <p className="mt-4 max-w-2xl text-base leading-7 text-neutral-700">
-        Manage the product type and Pokemon set values used by product forms and storefront filter dropdowns.
+        Manage the dropdown values used by product forms and customer-facing filters.
       </p>
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap items-center gap-3">
         <AdminLogoutButton />
+      </div>
+
+      <div className="mt-8 flex flex-wrap gap-2">
+        <CategoryLink
+          href="/admin/filters?category=pokemon_tcg"
+          isActive={selectedCategory === "pokemon_tcg"}
+          label="Pokemon TCG"
+        />
+        <CategoryLink href="/admin/filters?category=merch" isActive={selectedCategory === "merch"} label="Merch" />
       </div>
 
       <StatusMessage status={status} />
 
       <section className="mt-8">
-        <h2 className="text-xl font-bold text-ink">Add product type</h2>
-        <AddFilterValueForm defaultKind="product_type" label="Booster Box" />
+        <h2 className="text-xl font-bold text-ink">Product types</h2>
+        <AddFilterValueForm
+          category={selectedCategory}
+          kind="product_type"
+          label="Product type"
+          placeholder={selectedCategory === "pokemon_tcg" ? "Booster Box" : "T-Shirt"}
+        />
+        <FilterValueTable
+          category={selectedCategory}
+          emptyMessage="No product types have been added yet."
+          filterValues={filterValues}
+          kind="product_type"
+        />
       </section>
 
-      <section className="mt-8">
-        <h2 className="text-xl font-bold text-ink">Add Pokemon set</h2>
-        <AddFilterValueForm defaultKind="pokemon_set" label="White Flare" />
-      </section>
-
-      <div className="mt-8 overflow-x-auto rounded-lg border border-neutral-200 bg-white shadow-sm">
-        <table className="min-w-full divide-y divide-neutral-200 text-left text-sm">
-          <thead className="bg-neutral-50 text-xs uppercase text-neutral-500">
-            <tr>
-              <th scope="col" className="px-4 py-3 font-bold">
-                Kind
-              </th>
-              <th scope="col" className="px-4 py-3 font-bold">
-                Category and value
-              </th>
-              <th scope="col" className="px-4 py-3 font-bold">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-200">
-            {filterValues.map((filterValue) => (
-              <FilterValueRow key={filterValue.id} filterValue={filterValue} />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {selectedCategory === "pokemon_tcg" ? (
+        <section className="mt-8">
+          <h2 className="text-xl font-bold text-ink">Pokemon sets</h2>
+          <AddFilterValueForm category={selectedCategory} kind="pokemon_set" label="Pokemon set" placeholder="White Flare" />
+          <FilterValueTable
+            category={selectedCategory}
+            emptyMessage="No Pokemon sets have been added yet."
+            filterValues={filterValues}
+            kind="pokemon_set"
+          />
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -134,6 +134,7 @@ model Order {
   trackingNumber                  String?
   shippingCarrier                 String?
   shippedAt                       DateTime?
+  internalNotes                   String?
   orderConfirmationEmailSentAt    DateTime?
   shippingConfirmationEmailSentAt DateTime?
   subtotalCents                   Int

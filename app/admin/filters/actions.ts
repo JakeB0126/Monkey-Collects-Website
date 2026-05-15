@@ -12,8 +12,8 @@ function getString(formData: FormData, field: string) {
   return String(formData.get(field) ?? "").trim();
 }
 
-function getFilterListRedirect(status: "saved" | "deleted" | "error"): never {
-  redirect(`/admin/filters?status=${status}`);
+function getFilterListRedirect(category: ProductCategory, status: "saved" | "deleted" | "error"): never {
+  redirect(`/admin/filters?category=${category}&status=${status}`);
 }
 
 function parseFilterValue(formData: FormData) {
@@ -44,7 +44,7 @@ export async function createFilterValue(formData: FormData) {
   const data = parseFilterValue(formData);
 
   if (!data) {
-    getFilterListRedirect("error");
+    getFilterListRedirect("pokemon_tcg", "error");
   }
 
   const prisma = getPrismaClient();
@@ -58,18 +58,18 @@ export async function createFilterValue(formData: FormData) {
       create: data
     });
   } catch {
-    getFilterListRedirect("error");
+    getFilterListRedirect(data.category, "error");
   }
 
   revalidateFilterPages();
-  getFilterListRedirect("saved");
+  getFilterListRedirect(data.category, "saved");
 }
 
 export async function updateFilterValue(id: string, formData: FormData) {
   const data = parseFilterValue(formData);
 
   if (!data) {
-    getFilterListRedirect("error");
+    getFilterListRedirect("pokemon_tcg", "error");
   }
 
   const prisma = getPrismaClient();
@@ -82,14 +82,16 @@ export async function updateFilterValue(id: string, formData: FormData) {
       data
     });
   } catch {
-    getFilterListRedirect("error");
+    getFilterListRedirect(data.category, "error");
   }
 
   revalidateFilterPages();
-  getFilterListRedirect("saved");
+  getFilterListRedirect(data.category, "saved");
 }
 
-export async function deleteFilterValue(id: string) {
+export async function deleteFilterValue(id: string, formData: FormData) {
+  const category = getString(formData, "category") as ProductCategory;
+  const redirectCategory = productCategories.includes(category) ? category : "pokemon_tcg";
   const prisma = getPrismaClient();
 
   try {
@@ -99,9 +101,9 @@ export async function deleteFilterValue(id: string) {
       }
     });
   } catch {
-    getFilterListRedirect("error");
+    getFilterListRedirect(redirectCategory, "error");
   }
 
   revalidateFilterPages();
-  getFilterListRedirect("deleted");
+  getFilterListRedirect(redirectCategory, "deleted");
 }

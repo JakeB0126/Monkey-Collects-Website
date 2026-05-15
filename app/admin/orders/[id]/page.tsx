@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { updateOrderFulfillmentAction } from "@/app/admin/orders/actions";
+import { updateOrderFulfillmentAction, updateOrderInternalNotesAction } from "@/app/admin/orders/actions";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { getOrderForAdminById, orderStatuses, type AdminOrder } from "@/lib/orders";
 import { formatPrice } from "@/lib/products";
@@ -61,6 +61,14 @@ function SaveMessage({ status }: { status?: string }) {
     return (
       <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-700 shadow-sm">
         Fulfillment details saved.
+      </div>
+    );
+  }
+
+  if (status === "notes-saved") {
+    return (
+      <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-700 shadow-sm">
+        Internal notes saved.
       </div>
     );
   }
@@ -217,6 +225,28 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Adm
             Shipping email sent {formatDate(order.shippingConfirmationEmailSentAt)}.
           </p>
         ) : null}
+      </form>
+
+      <form
+        action={updateOrderInternalNotesAction.bind(null, order.id)}
+        className="mt-8 rounded-lg border border-neutral-200 bg-white p-5 shadow-sm"
+      >
+        <h2 className="text-xl font-bold text-ink">Internal notes</h2>
+        <p className="mt-2 text-sm leading-6 text-neutral-600">
+          Admin-only notes for refunds, customer issues, shipping problems, inventory problems, or manual follow-up.
+        </p>
+        <textarea
+          name="internalNotes"
+          rows={5}
+          defaultValue={order.internalNotes ?? ""}
+          className="mt-4 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+        />
+        <button
+          type="submit"
+          className="mt-4 rounded-md bg-store-red px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700"
+        >
+          Save notes
+        </button>
       </form>
 
       <div className="mt-8 overflow-x-auto rounded-lg border border-neutral-200 bg-white shadow-sm">

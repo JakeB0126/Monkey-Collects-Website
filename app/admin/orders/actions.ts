@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { orderStatuses, updateOrderFulfillment, type OrderStatus } from "@/lib/orders";
+import { orderStatuses, updateOrderFulfillment, updateOrderInternalNotes, type OrderStatus } from "@/lib/orders";
 
 function getString(formData: FormData, field: string) {
   return String(formData.get(field) ?? "").trim();
 }
 
-function getOrderRedirect(orderId: string, status: "saved" | "email-error" | "error"): never {
+function getOrderRedirect(orderId: string, status: "saved" | "notes-saved" | "email-error" | "error"): never {
   redirect(`/admin/orders/${orderId}?status=${status}`);
 }
 
@@ -53,4 +53,20 @@ export async function updateOrderFulfillmentAction(orderId: string, formData: Fo
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${orderId}`);
   getOrderRedirect(orderId, shippingEmailStatus === "failed" ? "email-error" : "saved");
+}
+
+export async function updateOrderInternalNotesAction(orderId: string, formData: FormData) {
+  try {
+    await updateOrderInternalNotes({
+      orderId,
+      internalNotes: getString(formData, "internalNotes")
+    });
+  } catch {
+    getOrderRedirect(orderId, "error");
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/orders");
+  revalidatePath(`/admin/orders/${orderId}`);
+  getOrderRedirect(orderId, "notes-saved");
 }

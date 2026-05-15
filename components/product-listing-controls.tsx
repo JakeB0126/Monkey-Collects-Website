@@ -70,16 +70,6 @@ function productCountLabel(resultCount: number) {
   return `${resultCount} ${resultCount === 1 ? "product" : "products"}`;
 }
 
-function selectedFilterCount(selected: SelectedProductFilters) {
-  return (
-    selected.productTypes.length +
-    selected.pokemonSets.length +
-    (selected.availability === "all" ? 0 : 1) +
-    (selected.minPrice ? 1 : 0) +
-    (selected.maxPrice ? 1 : 0)
-  );
-}
-
 function ChevronIcon({ className = "" }: { className?: string }) {
   return (
     <span
@@ -195,8 +185,6 @@ export function ProductListingControls({
   resultCount,
   selected
 }: ProductListingControlsProps) {
-  const filterCount = selectedFilterCount(selected);
-
   return (
     <form action={basePath} className="relative mt-8">
       <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
@@ -208,9 +196,6 @@ export function ProductListingControls({
               className="flex min-w-24 cursor-pointer list-none items-center justify-center gap-2 rounded-md border border-store-green bg-store-green px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-store-green"
             >
               Filter
-              {filterCount > 0 ? (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-ink">{filterCount}</span>
-              ) : null}
               <ChevronIcon className="border-white" />
             </summary>
             <div className="absolute left-0 z-20 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-amber-200 bg-store-card p-4 shadow-xl shadow-amber-950/15 sm:left-auto sm:right-0">

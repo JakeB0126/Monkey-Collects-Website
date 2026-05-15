@@ -48,6 +48,7 @@ const adminOrderSelect = {
   trackingNumber: true,
   shippingCarrier: true,
   shippedAt: true,
+  internalNotes: true,
   orderConfirmationEmailSentAt: true,
   shippingConfirmationEmailSentAt: true,
   subtotalCents: true,
@@ -166,6 +167,30 @@ export async function getRecentOrdersForAdmin() {
   }) satisfies Promise<AdminOrder[]>;
 }
 
+export async function getOrdersNeedingShipmentForAdmin() {
+  const prisma = getPrismaClient();
+
+  return prisma.order.findMany({
+    where: {
+      paymentStatus: "paid",
+      OR: [
+        {
+          shippedAt: null
+        },
+        {
+          trackingNumber: null
+        },
+        {
+          trackingNumber: ""
+        }
+      ]
+    },
+    orderBy: sortOrdersByNewestFirst(),
+    take: 50,
+    select: adminOrderSelect
+  }) satisfies Promise<AdminOrder[]>;
+}
+
 export async function getOrderForAdminById(id: string) {
   const prisma = getPrismaClient();
 
@@ -175,6 +200,20 @@ export async function getOrderForAdminById(id: string) {
     },
     select: adminOrderSelect
   }) satisfies Promise<AdminOrder | null>;
+}
+
+export async function updateOrderInternalNotes({ orderId, internalNotes }: { orderId: string; internalNotes: string }) {
+  const prisma = getPrismaClient();
+
+  return prisma.order.update({
+    where: {
+      id: orderId
+    },
+    data: {
+      internalNotes: internalNotes.trim() || null
+    },
+    select: adminOrderSelect
+  }) satisfies Promise<AdminOrder>;
 }
 
 export async function getOrdersForUser(userId: string) {
