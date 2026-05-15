@@ -69,11 +69,12 @@ export async function syncLocalCartItemsToSavedCart(userId: string, items: Saved
       }
     },
     select: {
-      id: true
+      id: true,
+      stockQuantity: true
     }
   });
-  const validProductIds = new Set(products.map((product) => product.id));
-  const mergeItems = normalizedItems.filter((item) => validProductIds.has(item.productId));
+  const stockQuantityByProductId = new Map(products.map((product) => [product.id, product.stockQuantity]));
+  const mergeItems = normalizedItems.filter((item) => (stockQuantityByProductId.get(item.productId) ?? 0) > 0);
 
   if (mergeItems.length === 0) {
     return readSavedCartItemsWithProducts(userId);
@@ -94,8 +95,11 @@ export async function syncLocalCartItemsToSavedCart(userId: string, items: Saved
   const existingQuantityByProductId = new Map(existingItems.map((item) => [item.productId, item.quantity]));
 
   await prisma.$transaction(
-    mergeItems.map((item) =>
-      prisma.cartItem.upsert({
+    mergeItems.map((item) => {
+      const existingQuantity = existingQuantityByProductId.get(item.productId) ?? 0;
+      const stockQuantity = stockQuantityByProductId.get(item.productId) ?? 0;
+
+      return prisma.cartItem.upsert({
         where: {
           cartId_productId: {
             cartId: cart.id,
@@ -103,15 +107,15 @@ export async function syncLocalCartItemsToSavedCart(userId: string, items: Saved
           },
         },
         update: {
-          quantity: Math.max(existingQuantityByProductId.get(item.productId) ?? 0, item.quantity)
+          quantity: Math.min(existingQuantity + item.quantity, stockQuantity)
         },
         create: {
           cartId: cart.id,
           productId: item.productId,
-          quantity: item.quantity
+          quantity: Math.min(item.quantity, stockQuantity)
         }
-      })
-    )
+      });
+    })
   );
 
   return readSavedCartItemsWithProducts(userId);
@@ -139,11 +143,17 @@ export async function replaceSavedCartItemsForUser(userId: string, items: SavedC
       }
     },
     select: {
-      id: true
+      id: true,
+      stockQuantity: true
     }
   });
-  const validProductIds = new Set(products.map((product) => product.id));
-  const validItems = normalizedItems.filter((item) => validProductIds.has(item.productId));
+  const stockQuantityByProductId = new Map(products.map((product) => [product.id, product.stockQuantity]));
+  const validItems = normalizedItems
+    .map((item) => ({
+      ...item,
+      quantity: Math.min(item.quantity, stockQuantityByProductId.get(item.productId) ?? 0)
+    }))
+    .filter((item) => item.quantity > 0);
 
   await prisma.$transaction([
     prisma.cartItem.deleteMany({

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import type { MutableRefObject } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   startCheckout,
   validateCartItems,
@@ -20,11 +21,62 @@ import {
 } from "@/lib/cart";
 import { formatPrice } from "@/lib/products";
 
+type CartViewProps = {
+  initialSavedCartItems?: CartItem[];
+};
+
 function getIssuesForProduct(productId: string, issues: CartValidationIssue[]) {
   return issues.filter((issue) => issue.productId === productId);
 }
 
-function syncSavedCart(cartItems: CartItem[]) {
+function mergeCartItems(localItems: CartItem[], savedItems: CartItem[]) {
+  if (savedItems.length > 0 && haveSameCartQuantities(localItems, savedItems)) {
+    return savedItems;
+  }
+
+  const itemByProductId = new Map<string, CartItem>();
+
+  for (const item of [...savedItems, ...localItems]) {
+    const existingItem = itemByProductId.get(item.productId);
+    const quantity = (existingItem?.quantity ?? 0) + item.quantity;
+    const product = existingItem?.product ?? item.product;
+
+    itemByProductId.set(item.productId, {
+      ...item,
+      product,
+      quantity: Math.min(quantity, product.stockQuantity)
+    });
+  }
+
+  return Array.from(itemByProductId.values()).filter((item) => item.quantity > 0);
+}
+
+function haveSameCartQuantities(firstItems: CartItem[], secondItems: CartItem[]) {
+  if (firstItems.length !== secondItems.length) {
+    return false;
+  }
+
+  const firstQuantityByProductId = new Map(firstItems.map((item) => [item.productId, item.quantity]));
+
+  return secondItems.every((item) => firstQuantityByProductId.get(item.productId) === item.quantity);
+}
+
+function getSavedCartSyncKey(cartItems: CartItem[]) {
+  return cartItems
+    .map((item) => `${item.productId}:${item.quantity}`)
+    .sort()
+    .join("|");
+}
+
+function syncSavedCart(cartItems: CartItem[], lastSyncedKeyRef: MutableRefObject<string | null>) {
+  const syncKey = getSavedCartSyncKey(cartItems);
+
+  if (lastSyncedKeyRef.current === syncKey) {
+    return;
+  }
+
+  lastSyncedKeyRef.current = syncKey;
+
   void syncCurrentCustomerCart(
     cartItems.map((item) => ({
       productId: item.productId,
@@ -33,7 +85,9 @@ function syncSavedCart(cartItems: CartItem[]) {
   );
 }
 
-export function CartView() {
+export function CartView({ initialSavedCartItems = [] }: CartViewProps) {
+  const hasInitializedCart = useRef(false);
+  const lastSyncedCartKey = useRef<string | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [hasLoadedCart, setHasLoadedCart] = useState(false);
   const [isValidatingCart, setIsValidatingCart] = useState(false);
@@ -63,25 +117,39 @@ export function CartView() {
 
     setCartItems(nextCartItems);
     writeCartItems(nextCartItems);
-    syncSavedCart(nextCartItems);
+    syncSavedCart(nextCartItems, lastSyncedCartKey);
     setUnavailableItems(result.unavailableItems);
     setStockIssues(result.stockIssues);
     setPriceChanges(result.priceChanges);
   }
 
   useEffect(() => {
-    const storedItems = readCartItems();
-
-    setCartItems(storedItems);
-    setHasLoadedCart(true);
-
-    if (storedItems.length === 0) {
+    if (hasInitializedCart.current) {
       return;
     }
 
+    hasInitializedCart.current = true;
+
+    const storedItems = readCartItems();
+    const mergedItems = mergeCartItems(storedItems, initialSavedCartItems);
+    const mergedSyncKey = getSavedCartSyncKey(mergedItems);
+    const savedSyncKey = getSavedCartSyncKey(initialSavedCartItems);
+
+    if (initialSavedCartItems.length > 0 && mergedSyncKey === savedSyncKey) {
+      lastSyncedCartKey.current = mergedSyncKey;
+    }
+
+    setCartItems(mergedItems);
+    setHasLoadedCart(true);
+
+    if (mergedItems.length === 0) {
+      return;
+    }
+
+    writeCartItems(mergedItems);
     setIsValidatingCart(true);
     validateCartItems(
-      storedItems.map((item) => ({
+      mergedItems.map((item) => ({
         productId: item.productId,
         quantity: item.quantity,
         priceCents: item.product.priceCents
@@ -99,12 +167,12 @@ export function CartView() {
       .finally(() => {
         setIsValidatingCart(false);
       });
-  }, []);
+  }, [initialSavedCartItems]);
 
   function saveCartItems(nextCartItems: CartItem[]) {
     setCartItems(nextCartItems);
     writeCartItems(nextCartItems);
-    syncSavedCart(nextCartItems);
+    syncSavedCart(nextCartItems, lastSyncedCartKey);
     setCheckoutError(null);
   }
 

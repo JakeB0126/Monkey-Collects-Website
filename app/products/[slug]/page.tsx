@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/add-to-cart-button";
+import { ProductCard } from "@/components/product-card";
 import { toCartProductSnapshot } from "@/lib/cart";
 import { formatPrice } from "@/lib/products";
-import { getActiveProductBySlug } from "@/lib/products-db";
+import { getActiveProductBySlug, getRelatedActiveProducts } from "@/lib/products-db";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   }
 
   const image = product.images[0] ?? "/product-placeholder.svg";
+  const relatedProducts = await getRelatedActiveProducts(product);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
@@ -47,6 +49,21 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           <AddToCartButton product={toCartProductSnapshot(product)} />
         </section>
       </div>
+      {relatedProducts.length > 0 ? (
+        <section className="mt-12">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-normal text-store-red">More to collect</p>
+              <h2 className="mt-2 font-display text-3xl font-black text-ink">Related Items</h2>
+            </div>
+          </div>
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {relatedProducts.map((relatedProduct) => (
+              <ProductCard key={relatedProduct.id} product={relatedProduct} />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

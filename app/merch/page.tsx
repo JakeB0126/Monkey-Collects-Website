@@ -14,10 +14,10 @@ type MerchPageProps = {
 export default async function MerchPage({ searchParams }: MerchPageProps) {
   const { filters, selected } = getProductListFiltersFromSearchParams(await searchParams);
   const hasActiveFilters = Boolean(
-    selected.productType || selected.minPrice || selected.maxPrice || selected.availability !== "all"
+    selected.productTypes.length || selected.minPrice || selected.maxPrice || selected.availability !== "all"
   );
   const [products, filterOptions] = await Promise.all([
-    getActiveProductsByCategory("merch", { ...filters, pokemonSet: undefined }),
+    getActiveProductsByCategory("merch", { ...filters, pokemonSets: undefined }),
     getActiveProductFilterOptions("merch")
   ]);
 
@@ -30,7 +30,7 @@ export default async function MerchPage({ searchParams }: MerchPageProps) {
         category="merch"
         filterOptions={filterOptions}
         resultCount={products.length}
-        selected={{ ...selected, pokemonSet: "" }}
+        selected={{ ...selected, pokemonSets: [] }}
       />
       {products.length > 0 ? (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
