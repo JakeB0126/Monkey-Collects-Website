@@ -1,8 +1,10 @@
 import { Resend } from "resend";
 import {
+  contactEmail,
   orderConfirmationEmail,
   passwordResetEmail,
   shippingConfirmationEmail,
+  type ContactEmailInput,
   type OrderConfirmationEmailInput,
   type PasswordResetEmailInput,
   type ShippingConfirmationEmailInput
@@ -65,6 +67,13 @@ export async function sendPasswordResetEmail(to: string, input: PasswordResetEma
   return sendTransactionalEmail({
     to,
     ...passwordResetEmail(input)
+  });
+}
+
+export async function sendContactEmail(to: string, input: ContactEmailInput) {
+  return sendTransactionalEmail({
+    to,
+    ...contactEmail(input)
   });
 }
 

@@ -20,6 +20,12 @@ export type PasswordResetEmailInput = {
   resetUrl: string;
 };
 
+export type ContactEmailInput = {
+  name: string;
+  email: string;
+  message: string;
+};
+
 export type ShippingConfirmationEmailInput = {
   orderNumber: string;
   trackingNumber?: string | null;
@@ -151,6 +157,25 @@ export function passwordResetEmail(input: PasswordResetEmailInput) {
   const text = `Reset your Baby Monkey Collects password:\n${input.resetUrl}\n\nIf you did not request this, you can ignore this email.`;
 
   return { subject: "Reset your Baby Monkey Collects password", html, text };
+}
+
+export function contactEmail(input: ContactEmailInput) {
+  const html = baseEmail({
+    preview: `New contact message from ${input.name}.`,
+    title: "New contact message",
+    children: `
+      <div style="background:#fff;border:1px solid #ead7ad;border-radius:10px;padding:16px;margin-bottom:18px;">
+        <p style="margin:0;font-size:13px;color:#6b5a4d;">From</p>
+        <p style="margin:4px 0 0;font-size:17px;font-weight:800;color:#164f35;">${escapeHtml(input.name)}</p>
+        <p style="margin:8px 0 0;font-size:14px;color:#2b170e;">${escapeHtml(input.email)}</p>
+      </div>
+      <p style="margin:0 0 8px;font-size:13px;color:#6b5a4d;">Message</p>
+      <p style="margin:0;white-space:pre-line;font-size:16px;line-height:1.7;color:#3c2a1d;">${escapeHtml(input.message)}</p>
+    `
+  });
+  const text = [`New contact message`, `From: ${input.name} <${input.email}>`, "", input.message].join("\n");
+
+  return { subject: `Contact form: ${input.name}`, html, text };
 }
 
 export function shippingConfirmationEmail(input: ShippingConfirmationEmailInput) {

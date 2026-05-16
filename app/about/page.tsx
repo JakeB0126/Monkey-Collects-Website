@@ -9,8 +9,16 @@ export default function AboutPage() {
       </h1>
       <div className="mt-6 space-y-5 text-base leading-8 text-neutral-700">
         <p>
-          Baby Monkey Collects is a small collector-first storefront focused on Pokemon TCG products, merch, and the
-          shared fun of finding the next favorite piece for your shelf or next opening.
+          Welcome to Baby Monkey Collects. We’re a small family business built around our love for Pokémon and the memories it has helped us create together. What started as a fun hobby with our son and daughter slowly grew into something much more meaningful for our family.
+        </p>
+        <p>
+          Our daughter was diagnosed with autism at age 2, and she has inspired so much of this journey. Pokémon became a special way for us to connect, spend time together, and celebrate what makes every person unique. Because of her, autism awareness and inclusion will always be an important part of who we are and what we hope to build within this community.
+        </p>
+        <p>
+          We want collecting to feel exciting, welcoming, and accessible to everyone. We do our best to keep prices affordable, often lower than TCG when we can, while still providing authentic products and honest customer service. Whether you’ve been collecting for years or are opening your very first pack, we’re happy you’re here.
+        </p>
+        <p>
+          Thank you for supporting our family and being part of Baby Monkey Collects. Every order truly means a lot to us.
         </p>
       </div>
       <div className="mt-9 grid gap-4 sm:grid-cols-3">
