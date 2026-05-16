@@ -65,9 +65,9 @@ export function SiteFooter() {
         <div className="flex justify-center lg:justify-end">
           <div className="w-full max-w-xs rounded-lg border border-emerald-100/25 bg-emerald-950/20 p-3 shadow-lg shadow-emerald-950/20">
             <img
-              src="/baby-monkey-footer-logo.svg"
+              src="/global-footer-image.png"
               alt="Baby Monkey Collects logo"
-              className="aspect-[5/6] w-full rounded-md bg-amber-100 object-contain"
+              className="aspect-square w-full rounded-md bg-amber-100 object-contain"
             />
           </div>
         </div>
