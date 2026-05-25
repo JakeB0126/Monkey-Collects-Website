@@ -1,58 +1,109 @@
 # Deployment Checklist
 
+Use this checklist for the production Vercel deployment. Do not commit real secret values.
+
+## Current Readiness Status
+
+- Typecheck: `pnpm run typecheck` passes.
+- Production build: `pnpm run build` passes.
+- Prisma migrations are present in `prisma/migrations`.
+- `.env.example` documents the required deployment variables.
+- `.env` is ignored and is not tracked.
+- Stripe Checkout uses server-side cart validation before creating a Checkout Session.
+- Stripe webhook signature verification is enabled at `/api/stripe/webhook`.
+- Webhooks are the payment source of truth. `/checkout/success` does not mark orders paid.
+- Inventory decrement happens during webhook-confirmed payment handling.
+- Duplicate signed webhook delivery was verified not to double-decrement inventory.
+- Admin routes are protected by middleware and the `ADMIN_PASSWORD` session gate.
+
 ## Required Vercel Environment Variables
 
-Set these in Vercel before deploying production:
+Set these in Vercel for Production before deploying:
 
-- `DATABASE_URL`: PostgreSQL connection string.
-- `NEXT_PUBLIC_SITE_URL`: Production site URL, for example `https://example.com`.
-- `STRIPE_SECRET_KEY`: Stripe secret key from the business owner's Stripe account.
-- `STRIPE_WEBHOOK_SECRET`: Stripe webhook signing secret for the production webhook endpoint.
+- `DATABASE_URL`: Production PostgreSQL connection string.
+- `NEXT_PUBLIC_SITE_URL`: Production site URL, for example `https://your-domain.com`.
 - `ADMIN_PASSWORD`: Long random password for the temporary V1 admin gate.
+- `CUSTOMER_SESSION_SECRET`: Long random secret for customer session signing.
+- `STRIPE_SECRET_KEY`: Production Stripe restricted key preferred, or secret key if a restricted key is not ready.
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`: Production Stripe publishable key from the same Stripe account and mode.
+- `STRIPE_WEBHOOK_SECRET`: Production webhook endpoint signing secret for `https://your-domain.com/api/stripe/webhook`.
+- `RESEND_API_KEY`: Production Resend API key.
+- `RESEND_FROM_EMAIL`: Verified production sender, for example `Baby Monkey Collects <orders@your-domain.com>`.
 
-Do not commit real secret values to the repo.
+Keep Stripe secret/restricted keys, publishable keys, and webhook secrets from the same Stripe account and mode.
 
-## Database and Prisma
+## Vercel Project Settings
+
+- Framework preset: Next.js.
+- Install command: `pnpm install`.
+- Build command: `pnpm run build`.
+- Output directory: leave Vercel default for Next.js.
+- Node version: use Vercel default unless project settings require pinning.
+
+## Database And Prisma
 
 - Confirm the production database is reachable from Vercel.
-- Run Prisma migrations against production before launch.
-- Expected migration command: `pnpm prisma migrate deploy`.
-- Confirm `pnpm prisma generate` runs during install/build or run it manually if needed.
-- Seed production only if starter inventory is intentionally wanted there.
+- Confirm `DATABASE_URL` is set in Vercel before build/runtime.
+- Run production migrations before launch:
 
-## Stripe Setup
+```bash
+pnpm prisma migrate deploy
+```
+
+- Confirm migrations complete without drift or failed migration records.
+- Seed production only if starter inventory is intentionally wanted there:
+
+```bash
+pnpm prisma db seed
+```
+
+## Stripe Production Setup
 
 - The business owner should create and own the Stripe account.
-- Use that account's test mode keys for final testing.
-- Create a Stripe webhook endpoint:
-  - Local testing: `http://localhost:3000/api/stripe/webhook`
-  - Production: `https://your-domain.com/api/stripe/webhook`
-- Subscribe at minimum to `checkout.session.completed`.
-- Copy the endpoint signing secret into `STRIPE_WEBHOOK_SECRET`.
-- Keep `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` from the same Stripe account and mode.
+- Prefer a restricted API key with only the permissions this integration needs.
+- Configure production payment methods in the Stripe Dashboard.
+- Create a production webhook endpoint:
+  - Endpoint URL: `https://your-domain.com/api/stripe/webhook`
+  - Event: `checkout.session.completed`
+- Copy the endpoint signing secret into Vercel as `STRIPE_WEBHOOK_SECRET`.
+- Do not add `payment_method_types`; Checkout should continue using dynamic payment methods.
+- Before switching live, run a test-mode payment against the deployed preview or production-like environment.
 
-## Admin Access
+## Resend Production Setup
 
-- Set `ADMIN_PASSWORD` in Vercel.
-- Visit `/admin`.
-- Confirm logged-out users are redirected to `/admin/login`.
-- Confirm the password grants access to products and orders.
-- Confirm logout returns to the login page.
+- Verify the sending domain in Resend.
+- Add required DNS records from Resend at the domain DNS provider.
+- Create a production Resend API key.
+- Set `RESEND_API_KEY` in Vercel.
+- Set `RESEND_FROM_EMAIL` to an address on the verified sending domain.
+- After deployment, confirm order confirmation and shipping confirmation emails send.
 
-## Final Smoke Tests
+## Domain Setup
 
-- Visit `/`, `/pokemon-tcg`, `/merch`, `/about`, and `/cart`.
-- Add an active product to cart.
-- Confirm cart refreshes current price and stock.
-- Start Stripe Checkout.
-- Complete a Stripe test payment.
-- Confirm `/checkout/success` renders and clears the local cart.
-- Confirm Stripe webhook marks the order `paid` and `fulfilled`.
-- Confirm inventory decreases exactly once.
-- Confirm `/admin/orders` shows customer email, Stripe IDs, order status, and payment status.
-- Retry a duplicate webhook event if practical and confirm inventory does not decrement again.
-- Cancel a Checkout session and confirm `/checkout/cancel` returns the customer to cart.
+- Add the production domain in Vercel.
+- Configure DNS records exactly as Vercel provides.
+- Set `NEXT_PUBLIC_SITE_URL` to the final HTTPS domain, with no trailing slash.
+- After DNS is active, update Stripe webhook endpoint URLs to use the final production domain.
+- Confirm HTTPS is active before running live payments.
 
-## Known Pre-Deployment Blocker
+## Deployment Commands
 
-The full Stripe payment loop is blocked until the business owner creates or owns the Stripe account and provides test keys plus webhook setup. Frontend and non-Stripe backend checks can continue before that.
+Local readiness:
+
+```bash
+pnpm install
+pnpm run typecheck
+pnpm run build
+```
+
+Production database migration:
+
+```bash
+pnpm prisma migrate deploy
+```
+
+Deploy through Vercel after env vars and migrations are ready.
+
+## Final Smoke Test
+
+Run `docs/final-smoke-test.md` after deployment and before announcing launch.
