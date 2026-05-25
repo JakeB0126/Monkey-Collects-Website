@@ -82,13 +82,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.message }, { status: 500 });
   }
 
-  try {
-    await sendOrderConfirmationEmailForOrder(result.orderId);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Order confirmation email could not be sent.";
+  if (process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL) {
+    try {
+      await sendOrderConfirmationEmailForOrder(result.orderId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Order confirmation email could not be sent.";
 
-    console.error(message);
-    return NextResponse.json({ error: message }, { status: 500 });
+      console.error(message);
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ received: true, result });

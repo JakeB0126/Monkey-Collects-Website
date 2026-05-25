@@ -9,7 +9,9 @@ function createStripeClient() {
     throw new Error("STRIPE_SECRET_KEY is required before starting checkout.");
   }
 
-  return new Stripe(process.env.STRIPE_SECRET_KEY);
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2026-04-22.dahlia"
+  });
 }
 
 export function getStripeClient() {
