@@ -16,6 +16,17 @@ type AdminOrderDetailPageProps = {
   }>;
 };
 
+type AdminOrderItemDisplay = {
+  id: string;
+  productId: string;
+  quantity: number;
+  unitPriceCents: number;
+  lineTotalCents: number;
+  productName: string;
+  productSlug: string;
+  productImage: string | null;
+};
+
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
@@ -271,7 +282,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Adm
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-200">
-            {order.items.map((item) => {
+            {order.items.map((item: AdminOrderItemDisplay) => {
               const image = item.productImage ?? "/product-placeholder.svg";
 
               return (

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { logoutCustomerAction } from "@/app/account/actions";
 import { getCurrentCustomerSession } from "@/lib/customer-auth";
 import { getOrdersForUser } from "@/lib/orders";
+import type { CustomerOrder } from "@/lib/orders";
 import { formatPrice } from "@/lib/products";
 import { readSavedCartItemsWithProducts } from "@/lib/saved-cart";
 
@@ -31,9 +32,10 @@ export default async function AccountPage() {
     readSavedCartItemsWithProducts(customer.id),
     getOrdersForUser(customer.id)
   ]);
-  const savedCartItemCount = savedCart.items.reduce((count, item) => count + item.quantity, 0);
+  const savedCartItemCount = savedCart.items.reduce((count: number, item: { quantity: number }) => count + item.quantity, 0);
   const savedCartSubtotalCents = savedCart.items.reduce(
-    (subtotal, item) => subtotal + item.product.priceCents * item.quantity,
+    (subtotal: number, item: { product: { priceCents: number }; quantity: number }) =>
+      subtotal + item.product.priceCents * item.quantity,
     0
   );
 
@@ -80,7 +82,7 @@ export default async function AccountPage() {
             </p>
           ) : (
             <div className="mt-4 space-y-4">
-              {orders.slice(0, 5).map((order) => (
+              {(orders as CustomerOrder[]).slice(0, 5).map((order) => (
                 <div key={order.id} className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
@@ -96,7 +98,9 @@ export default async function AccountPage() {
                     </span>
                   </div>
                   <p className="mt-3 text-sm leading-6 text-neutral-700">
-                    {order.items.map((item) => `${item.quantity}x ${item.productName}`).join(", ")}
+                    {order.items
+                      .map((item: CustomerOrder["items"][number]) => `${item.quantity}x ${item.productName}`)
+                      .join(", ")}
                   </p>
                 </div>
               ))}

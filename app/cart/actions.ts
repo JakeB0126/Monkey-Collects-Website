@@ -3,7 +3,7 @@
 import { createPendingOrderFromValidatedCartItems } from "@/lib/orders";
 import { getCurrentCustomerSession } from "@/lib/customer-auth";
 import { getPrismaClient } from "@/lib/prisma";
-import { type ProductStatus } from "@/lib/products";
+import { type Product, type ProductStatus } from "@/lib/products";
 import { getStripeClient } from "@/lib/stripe";
 
 export type CartValidationInputItem = {
@@ -99,7 +99,7 @@ export async function validateCartItems(items: CartValidationInputItem[]): Promi
   }
 
   const prisma = getPrismaClient();
-  const products = await prisma.product.findMany({
+  const products: Product[] = await prisma.product.findMany({
     where: {
       id: {
         in: requestedItems.map((item) => item.productId)

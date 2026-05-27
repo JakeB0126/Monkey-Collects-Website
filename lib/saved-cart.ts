@@ -1,8 +1,47 @@
 import { getPrismaClient } from "@/lib/prisma";
+import type { ProductCategory, ProductStatus } from "@/lib/products";
 
 export type SavedCartInputItem = {
   productId: string;
   quantity: number;
+};
+
+type SavedCartRecord = {
+  id: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type SavedCartItem = {
+  id: string;
+  productId: string;
+  quantity: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type SavedCartWithProductItem = SavedCartItem & {
+  product: {
+    id: string;
+    slug: string;
+    name: string;
+    description: string;
+    category: ProductCategory;
+    productType: string;
+    priceCents: number;
+    stockQuantity: number;
+    status: ProductStatus;
+    images: string[];
+  };
+};
+
+export type SavedCart = SavedCartRecord & {
+  items: SavedCartItem[];
+};
+
+export type SavedCartWithProducts = SavedCartRecord & {
+  items: SavedCartWithProductItem[];
 };
 
 function normalizeSavedCartItems(items: SavedCartInputItem[]) {
@@ -22,10 +61,10 @@ function normalizeSavedCartItems(items: SavedCartInputItem[]) {
   }));
 }
 
-export async function getSavedCartForUser(userId: string) {
+export async function getSavedCartForUser(userId: string): Promise<SavedCart | null> {
   const prisma = getPrismaClient();
 
-  return prisma.savedCart.findUnique({
+  const cart: SavedCart | null = await prisma.savedCart.findUnique({
     where: {
       userId
     },
@@ -37,12 +76,14 @@ export async function getSavedCartForUser(userId: string) {
       }
     }
   });
+
+  return cart;
 }
 
-export async function getOrCreateSavedCartForUser(userId: string) {
+export async function getOrCreateSavedCartForUser(userId: string): Promise<SavedCartRecord> {
   const prisma = getPrismaClient();
 
-  return prisma.savedCart.upsert({
+  const cart: SavedCartRecord = await prisma.savedCart.upsert({
     where: {
       userId
     },
@@ -51,9 +92,14 @@ export async function getOrCreateSavedCartForUser(userId: string) {
       userId
     }
   });
+
+  return cart;
 }
 
-export async function syncLocalCartItemsToSavedCart(userId: string, items: SavedCartInputItem[]) {
+export async function syncLocalCartItemsToSavedCart(
+  userId: string,
+  items: SavedCartInputItem[]
+): Promise<SavedCartWithProducts> {
   const normalizedItems = normalizeSavedCartItems(items);
   const prisma = getPrismaClient();
   const cart = await getOrCreateSavedCartForUser(userId);
@@ -121,7 +167,10 @@ export async function syncLocalCartItemsToSavedCart(userId: string, items: Saved
   return readSavedCartItemsWithProducts(userId);
 }
 
-export async function replaceSavedCartItemsForUser(userId: string, items: SavedCartInputItem[]) {
+export async function replaceSavedCartItemsForUser(
+  userId: string,
+  items: SavedCartInputItem[]
+): Promise<SavedCartWithProducts> {
   const normalizedItems = normalizeSavedCartItems(items);
   const prisma = getPrismaClient();
   const cart = await getOrCreateSavedCartForUser(userId);
@@ -187,9 +236,9 @@ export async function replaceSavedCartItemsForUser(userId: string, items: SavedC
   return readSavedCartItemsWithProducts(userId);
 }
 
-export async function readSavedCartItemsWithProducts(userId: string) {
+export async function readSavedCartItemsWithProducts(userId: string): Promise<SavedCartWithProducts> {
   const prisma = getPrismaClient();
-  const cart = await prisma.savedCart.findUnique({
+  const cart: SavedCartWithProducts | null = await prisma.savedCart.findUnique({
     where: {
       userId
     },
@@ -237,7 +286,11 @@ export async function readSavedCartItemsWithProducts(userId: string) {
   };
 }
 
-export async function updateSavedCartItemQuantity(userId: string, productId: string, quantity: number) {
+export async function updateSavedCartItemQuantity(
+  userId: string,
+  productId: string,
+  quantity: number
+): Promise<SavedCartWithProducts> {
   if (!Number.isInteger(quantity) || quantity < 0) {
     throw new Error("Quantity must be a non-negative integer.");
   }
@@ -276,7 +329,7 @@ export async function updateSavedCartItemQuantity(userId: string, productId: str
   return readSavedCartItemsWithProducts(userId);
 }
 
-export async function removeSavedCartItem(userId: string, productId: string) {
+export async function removeSavedCartItem(userId: string, productId: string): Promise<SavedCartWithProducts> {
   const cart = await getSavedCartForUser(userId);
 
   if (!cart) {

@@ -14,6 +14,12 @@ export type ProductListFilters = {
   sort?: ProductSortOption;
 };
 
+type ActiveProductFilterProduct = {
+  productType: string;
+  pokemonSet: string | null;
+  priceCents: number;
+};
+
 function sortProductsByNewestFirst() {
   return {
     createdAt: "desc" as const
@@ -36,22 +42,27 @@ function getProductListOrderBy(sort: ProductSortOption = "featured") {
   return [{ featured: "desc" as const }, sortProductsByNewestFirst()];
 }
 
-export async function getFeaturedProducts() {
+export async function getFeaturedProducts(): Promise<Product[]> {
   const prisma = getPrismaClient();
 
-  return prisma.product.findMany({
+  const products: Product[] = await prisma.product.findMany({
     where: {
       featured: true,
       status: "active"
     },
     orderBy: sortProductsByNewestFirst()
-  }) satisfies Promise<Product[]>;
+  });
+
+  return products;
 }
 
-export async function getActiveProductsByCategory(category: ProductCategory, filters: ProductListFilters = {}) {
+export async function getActiveProductsByCategory(
+  category: ProductCategory,
+  filters: ProductListFilters = {}
+): Promise<Product[]> {
   const prisma = getPrismaClient();
 
-  return prisma.product.findMany({
+  const products: Product[] = await prisma.product.findMany({
     where: {
       category,
       status: "active",
@@ -69,12 +80,15 @@ export async function getActiveProductsByCategory(category: ProductCategory, fil
         : {})
     },
     orderBy: getProductListOrderBy(filters.sort)
-  }) satisfies Promise<Product[]>;
+  });
+
+  return products;
 }
 
 export async function getActiveProductFilterOptions(category: ProductCategory) {
   const prisma = getPrismaClient();
-  const [products, managedOptions] = await Promise.all([
+  const [products, managedOptions]: [ActiveProductFilterProduct[], Awaited<ReturnType<typeof getProductFilterValueOptions>>] =
+    await Promise.all([
     prisma.product.findMany({
       where: {
         category,
@@ -86,8 +100,8 @@ export async function getActiveProductFilterOptions(category: ProductCategory) {
         priceCents: true
       }
     }),
-    getProductFilterValueOptions(category)
-  ]);
+      getProductFilterValueOptions(category)
+    ]);
   const activeProductTypes = new Set(products.map((product) => product.productType));
   const activePokemonSets = new Set(products.map((product) => product.pokemonSet).filter(Boolean));
 
@@ -99,20 +113,22 @@ export async function getActiveProductFilterOptions(category: ProductCategory) {
   };
 }
 
-export async function getActiveProductBySlug(slug: string) {
+export async function getActiveProductBySlug(slug: string): Promise<Product | null> {
   const prisma = getPrismaClient();
 
-  return prisma.product.findFirst({
+  const product: Product | null = await prisma.product.findFirst({
     where: {
       slug,
       status: "active"
     }
-  }) satisfies Promise<Product | null>;
+  });
+
+  return product;
 }
 
-export async function getRelatedActiveProducts(product: Product, limit = 4) {
+export async function getRelatedActiveProducts(product: Product, limit = 4): Promise<Product[]> {
   const prisma = getPrismaClient();
-  const candidates = await prisma.product.findMany({
+  const candidates: Product[] = await prisma.product.findMany({
     where: {
       id: {
         not: product.id
@@ -138,20 +154,24 @@ export async function getRelatedActiveProducts(product: Product, limit = 4) {
     .slice(0, limit) satisfies Product[];
 }
 
-export async function getAllProductsForAdmin() {
+export async function getAllProductsForAdmin(): Promise<Product[]> {
   const prisma = getPrismaClient();
 
-  return prisma.product.findMany({
+  const products: Product[] = await prisma.product.findMany({
     orderBy: sortProductsByNewestFirst()
-  }) satisfies Promise<Product[]>;
+  });
+
+  return products;
 }
 
-export async function getProductForAdminById(id: string) {
+export async function getProductForAdminById(id: string): Promise<Product | null> {
   const prisma = getPrismaClient();
 
-  return prisma.product.findUnique({
+  const product: Product | null = await prisma.product.findUnique({
     where: {
       id
     }
-  }) satisfies Promise<Product | null>;
+  });
+
+  return product;
 }

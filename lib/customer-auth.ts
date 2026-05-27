@@ -1,7 +1,6 @@
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual, createHmac, createHash } from "node:crypto";
 import { promisify } from "node:util";
 import { cookies } from "next/headers";
-import { Prisma } from "@prisma/client";
 import { getPrismaClient } from "@/lib/prisma";
 
 export const CUSTOMER_SESSION_COOKIE = "monkey-collects-customer-session";
@@ -20,6 +19,10 @@ export type CustomerSession = {
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
+}
+
+function isKnownPrismaError(error: unknown, code: string) {
+  return typeof error === "object" && error !== null && "code" in error && (error as { code?: unknown }).code === code;
 }
 
 function getSessionSecret() {
@@ -120,7 +123,7 @@ export async function createCustomerAccount({
       }
     });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    if (isKnownPrismaError(error, "P2002")) {
       throw new Error("An account already exists for that email.");
     }
 

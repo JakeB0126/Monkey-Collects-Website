@@ -18,17 +18,19 @@ function orderByValue() {
   };
 }
 
-export async function getProductFilterValuesForAdmin() {
+export async function getProductFilterValuesForAdmin(): Promise<ProductFilterValue[]> {
   const prisma = getPrismaClient();
 
-  return prisma.productFilterValue.findMany({
+  const values: ProductFilterValue[] = await prisma.productFilterValue.findMany({
     orderBy: [orderByValue(), { createdAt: "asc" as const }]
-  }) satisfies Promise<ProductFilterValue[]>;
+  });
+
+  return values;
 }
 
 export async function getProductFilterValueOptions(category: ProductCategory) {
   const prisma = getPrismaClient();
-  const values = await prisma.productFilterValue.findMany({
+  const values: ProductFilterValue[] = await prisma.productFilterValue.findMany({
     where: {
       category
     },
@@ -43,7 +45,7 @@ export async function getProductFilterValueOptions(category: ProductCategory) {
 
 export async function getAllProductFilterValueOptions() {
   const prisma = getPrismaClient();
-  const values = await prisma.productFilterValue.findMany({
+  const values: ProductFilterValue[] = await prisma.productFilterValue.findMany({
     orderBy: orderByValue()
   });
 

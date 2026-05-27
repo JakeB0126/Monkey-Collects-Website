@@ -28,7 +28,7 @@ export default async function RootLayout({
   const customer = await getCurrentCustomerSession();
   const accountLink = customer ? { href: "/account", label: "Account" } : { href: "/auth", label: "Sign In" };
   const savedCart = customer ? await getSavedCartForUser(customer.id) : null;
-  const cartCount = savedCart?.items.reduce((count, item) => count + item.quantity, 0) ?? 0;
+  const cartCount = savedCart?.items.reduce((count: number, item: { quantity: number }) => count + item.quantity, 0) ?? 0;
   const navLinkClassName =
     "header-link rounded-md px-3.5 py-2.5 text-emerald-50 transition hover:bg-emerald-900 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-200 sm:px-4";
 

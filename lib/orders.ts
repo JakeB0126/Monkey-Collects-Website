@@ -1,6 +1,5 @@
 import { randomBytes } from "node:crypto";
 import type { ValidatedCartItem } from "@/app/cart/actions";
-import { Prisma } from "@prisma/client";
 import { sendOrderConfirmationEmail, sendShippingConfirmationEmail } from "@/lib/email";
 import { getPrismaClient } from "@/lib/prisma";
 
@@ -73,9 +72,49 @@ const adminOrderSelect = {
   }
 };
 
-export type AdminOrder = Prisma.OrderGetPayload<{
-  select: typeof adminOrderSelect;
-}>;
+export type AdminOrderItem = {
+  id: string;
+  productId: string;
+  quantity: number;
+  unitPriceCents: number;
+  lineTotalCents: number;
+  productName: string;
+  productSlug: string;
+  productImage: string | null;
+  createdAt: Date;
+};
+
+export type AdminOrder = {
+  id: string;
+  orderNumber: string | null;
+  userId: string | null;
+  customerEmail: string | null;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  stripeCheckoutSessionId: string | null;
+  stripePaymentIntentId: string | null;
+  trackingNumber: string | null;
+  shippingCarrier: string | null;
+  shippedAt: Date | null;
+  internalNotes: string | null;
+  orderConfirmationEmailSentAt: Date | null;
+  shippingConfirmationEmailSentAt: Date | null;
+  subtotalCents: number;
+  totalCents: number;
+  createdAt: Date;
+  updatedAt: Date;
+  items: AdminOrderItem[];
+};
+
+type ProductStock = {
+  id: string;
+  stockQuantity: number;
+};
+
+type TransactionPrismaClient = Omit<
+  ReturnType<typeof getPrismaClient>,
+  "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
+>;
 
 const customerOrderSelect = {
   id: true,
@@ -109,9 +148,34 @@ const customerOrderSelect = {
   }
 };
 
-export type CustomerOrder = Prisma.OrderGetPayload<{
-  select: typeof customerOrderSelect;
-}>;
+export type CustomerOrderItem = {
+  id: string;
+  productId: string;
+  quantity: number;
+  unitPriceCents: number;
+  lineTotalCents: number;
+  productName: string;
+  productSlug: string;
+  productImage: string | null;
+  createdAt: Date;
+};
+
+export type CustomerOrder = {
+  id: string;
+  orderNumber: string | null;
+  userId: string | null;
+  customerEmail: string | null;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  subtotalCents: number;
+  totalCents: number;
+  trackingNumber: string | null;
+  shippingCarrier: string | null;
+  shippedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  items: CustomerOrderItem[];
+};
 
 const transactionalEmailOrderSelect = {
   id: true,
@@ -139,9 +203,26 @@ const transactionalEmailOrderSelect = {
   }
 };
 
-type TransactionalEmailOrder = Prisma.OrderGetPayload<{
-  select: typeof transactionalEmailOrderSelect;
-}>;
+type TransactionalEmailOrder = {
+  id: string;
+  orderNumber: string | null;
+  customerEmail: string | null;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  subtotalCents: number;
+  totalCents: number;
+  trackingNumber: string | null;
+  shippingCarrier: string | null;
+  shippedAt: Date | null;
+  orderConfirmationEmailSentAt: Date | null;
+  shippingConfirmationEmailSentAt: Date | null;
+  items: Array<{
+    quantity: number;
+    unitPriceCents: number;
+    lineTotalCents: number;
+    productName: string;
+  }>;
+};
 
 function sortOrdersByNewestFirst() {
   return {
@@ -157,20 +238,22 @@ function getOrderNumber(order: Pick<TransactionalEmailOrder, "id" | "orderNumber
   return order.orderNumber ?? `BMC-${order.id.slice(-8).toUpperCase()}`;
 }
 
-export async function getRecentOrdersForAdmin() {
+export async function getRecentOrdersForAdmin(): Promise<AdminOrder[]> {
   const prisma = getPrismaClient();
 
-  return prisma.order.findMany({
+  const orders: AdminOrder[] = await prisma.order.findMany({
     orderBy: sortOrdersByNewestFirst(),
     take: 50,
     select: adminOrderSelect
-  }) satisfies Promise<AdminOrder[]>;
+  });
+
+  return orders;
 }
 
-export async function getOrdersNeedingShipmentForAdmin() {
+export async function getOrdersNeedingShipmentForAdmin(): Promise<AdminOrder[]> {
   const prisma = getPrismaClient();
 
-  return prisma.order.findMany({
+  const orders: AdminOrder[] = await prisma.order.findMany({
     where: {
       paymentStatus: "paid",
       OR: [
@@ -188,24 +271,28 @@ export async function getOrdersNeedingShipmentForAdmin() {
     orderBy: sortOrdersByNewestFirst(),
     take: 50,
     select: adminOrderSelect
-  }) satisfies Promise<AdminOrder[]>;
+  });
+
+  return orders;
 }
 
-export async function getOrderForAdminById(id: string) {
+export async function getOrderForAdminById(id: string): Promise<AdminOrder | null> {
   const prisma = getPrismaClient();
 
-  return prisma.order.findUnique({
+  const order: AdminOrder | null = await prisma.order.findUnique({
     where: {
       id
     },
     select: adminOrderSelect
-  }) satisfies Promise<AdminOrder | null>;
+  });
+
+  return order;
 }
 
 export async function updateOrderInternalNotes({ orderId, internalNotes }: { orderId: string; internalNotes: string }) {
   const prisma = getPrismaClient();
 
-  return prisma.order.update({
+  const order: AdminOrder = await prisma.order.update({
     where: {
       id: orderId
     },
@@ -213,19 +300,23 @@ export async function updateOrderInternalNotes({ orderId, internalNotes }: { ord
       internalNotes: internalNotes.trim() || null
     },
     select: adminOrderSelect
-  }) satisfies Promise<AdminOrder>;
+  });
+
+  return order;
 }
 
-export async function getOrdersForUser(userId: string) {
+export async function getOrdersForUser(userId: string): Promise<CustomerOrder[]> {
   const prisma = getPrismaClient();
 
-  return prisma.order.findMany({
+  const orders: CustomerOrder[] = await prisma.order.findMany({
     where: {
       userId
     },
     orderBy: sortOrdersByNewestFirst(),
     select: customerOrderSelect
-  }) satisfies Promise<CustomerOrder[]>;
+  });
+
+  return orders;
 }
 
 export async function createPendingOrderFromValidatedCartItems({
@@ -307,7 +398,8 @@ export async function confirmPaidOrderFromStripeCheckout({
 }): Promise<ConfirmPaidOrderResult> {
   const prisma = getPrismaClient();
 
-  return prisma.$transaction(async (tx) => {
+  const result: ConfirmPaidOrderResult = await prisma.$transaction(
+    async (tx: TransactionPrismaClient): Promise<ConfirmPaidOrderResult> => {
     await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${orderId} FOR UPDATE`;
 
     const order = await tx.order.findUnique({
@@ -355,10 +447,12 @@ export async function confirmPaidOrderFromStripeCheckout({
     const productIds = Array.from(quantityByProductId.keys());
 
     if (productIds.length > 0) {
-      await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id" IN (${Prisma.join(productIds)}) FOR UPDATE`;
+      const placeholders = productIds.map((_, index) => `$${index + 1}`).join(", ");
+
+      await tx.$queryRawUnsafe(`SELECT "id" FROM "Product" WHERE "id" IN (${placeholders}) FOR UPDATE`, ...productIds);
     }
 
-    const products = await tx.product.findMany({
+    const products: ProductStock[] = await tx.product.findMany({
       where: {
         id: {
           in: productIds
@@ -429,7 +523,10 @@ export async function confirmPaidOrderFromStripeCheckout({
       status: "paid",
       orderId: order.id
     };
-  });
+    }
+  );
+
+  return result;
 }
 
 export async function sendOrderConfirmationEmailForOrder(orderId: string) {
