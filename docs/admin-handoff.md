@@ -31,8 +31,11 @@ Use `/admin/products/new` to add a product. Product forms support:
 - price in cents
 - stock quantity
 - status
+- image uploads from your computer
 - image URLs
 - featured flag
+
+Uploaded product images are saved to Vercel Blob and then added to the image URL list. Pasted image URLs still work.
 
 Use the edit link on `/admin/products` to update an existing product.
 

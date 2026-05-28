@@ -15,6 +15,7 @@ Use this checklist for the production Vercel deployment. Do not commit real secr
 - Inventory decrement happens during webhook-confirmed payment handling.
 - Duplicate signed webhook delivery was verified not to double-decrement inventory.
 - Admin routes are protected by middleware and the `ADMIN_PASSWORD` session gate.
+- Admin product image uploads use Vercel Blob public URLs. Uploaded files are not stored in the repo or local filesystem.
 
 ## Required Vercel Environment Variables
 
@@ -29,6 +30,7 @@ Set these in Vercel for Production before deploying:
 - `STRIPE_WEBHOOK_SECRET`: Production webhook endpoint signing secret for `https://your-domain.com/api/stripe/webhook`.
 - `RESEND_API_KEY`: Production Resend API key.
 - `RESEND_FROM_EMAIL`: Verified production sender, for example `Baby Monkey Collects <orders@your-domain.com>`.
+- `BLOB_READ_WRITE_TOKEN`: Vercel Blob read/write token for public product image uploads.
 
 Keep Stripe secret/restricted keys, publishable keys, and webhook secrets from the same Stripe account and mode.
 
@@ -77,6 +79,18 @@ pnpm prisma db seed
 - Set `RESEND_API_KEY` in Vercel.
 - Set `RESEND_FROM_EMAIL` to an address on the verified sending domain.
 - After deployment, confirm order confirmation and shipping confirmation emails send.
+
+## Vercel Blob Setup
+
+- In the Vercel project, add a Blob store for product images.
+- Connect the Blob store to this project so Vercel provides `BLOB_READ_WRITE_TOKEN`.
+- Pull env vars locally after setup:
+
+```bash
+pnpm dlx vercel@latest env pull .env.local --yes
+```
+
+- Product image uploads accept JPG, PNG, and WebP files up to 4 MB each. Uploaded images are saved as public Blob URLs and stored on products alongside any manually pasted image URLs.
 
 ## Domain Setup
 

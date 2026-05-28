@@ -113,10 +113,10 @@ function getProductFormData(formData: FormData): { data?: ProductFormData; state
   const data = {
     name: getRequiredString(values, "name", fieldErrors),
     slug: getRequiredString(values, "slug", fieldErrors),
-    description: getRequiredString(values, "description", fieldErrors),
+    description: values.description.trim(),
     category: category as ProductCategory,
-    productType: getRequiredString(values, "productType", fieldErrors),
-    pokemonSet: values.pokemonSet.trim() || null,
+    productType: values.productType.trim(),
+    pokemonSet: category === "pokemon_tcg" ? values.pokemonSet.trim() || null : null,
     priceCents: getNonNegativeInteger(values, "priceCents", fieldErrors),
     stockQuantity: getNonNegativeInteger(values, "stockQuantity", fieldErrors),
     status: status as ProductStatus,

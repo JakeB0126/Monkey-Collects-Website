@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
+  ADMIN_SESSION_MAX_AGE_SECONDS,
   ADMIN_SESSION_COOKIE,
   getAdminSessionValue,
   isAdminPasswordConfigured,
@@ -50,7 +51,7 @@ export async function loginAdmin(_previousState: AdminLoginState, formData: Form
 
   cookieStore.set(ADMIN_SESSION_COOKIE, sessionValue, {
     httpOnly: true,
-    maxAge: 60 * 60 * 8,
+    maxAge: ADMIN_SESSION_MAX_AGE_SECONDS,
     path: "/admin",
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production"

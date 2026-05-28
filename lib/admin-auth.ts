@@ -1,4 +1,5 @@
 export const ADMIN_SESSION_COOKIE = "monkey-collects-admin-session";
+export const ADMIN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 const ADMIN_SESSION_MESSAGE = "monkey-collects-admin";
 
