@@ -17,7 +17,7 @@ export function SiteFooter() {
           <section aria-label="Footer branding">
             <p className="font-display text-2xl font-black tracking-normal text-white">Baby Monkey Collects</p>
             <p className="mt-3 max-w-md text-sm font-semibold leading-7 text-emerald-50/85">
-              Cozy sealed Pokemon products, collector merch, and warm shelf energy for the next favorite pull.
+              Sealed Pokemon products, collector merch, and warm shelf energy for the next favorite pull.
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-2" aria-label="Social links">
               {socialLinks.map((link) => (
@@ -56,7 +56,7 @@ export function SiteFooter() {
               Collector Updates
             </p>
             <p className="mt-2 max-w-xl text-sm font-semibold leading-7 text-emerald-50/85">
-              Get first looks at sealed drops, restocks, and cozy collector updates when email marketing is connected.
+              Get first looks at sealed drops, restocks, and collector updates when email marketing is connected.
             </p>
             <FooterEmailSignup />
           </section>
